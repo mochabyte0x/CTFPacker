@@ -323,7 +323,7 @@ I'll probably add some kind of argument in the future for you to choose between 
 ## Detections
 
 - Undetected on the latest Windows 11 Defender (2025-03-18, Version 1.425.89.0)
-- Undetected on Windows 10 Defender
+- Undetected on Windows 10 Defender (2025-03-18, Version 1.425.90.0)
 - Undetected on the latest Sophos Home Premium (Version 2023.2.2.2)
    ![image](https://github.com/user-attachments/assets/54a5539c-8eb8-490e-a189-33fbf7be9867)
 
