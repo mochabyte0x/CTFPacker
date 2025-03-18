@@ -46,6 +46,7 @@ This repository has been created to facilitate AV evasion during CTFs and/or pen
 
 - Indirect Syscalls via Syswhispers (rewrote in NASM compatible assembly)
 - API Hashing
+- NTDLL unhooking via Known DLLs technique
 - Custom GetProcAddr & GetModuleHandle functions
 - Custom AES-128-CBC mode encryption & decryption
 - EarlyBird APC Injection
