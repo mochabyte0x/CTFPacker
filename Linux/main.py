@@ -11,6 +11,7 @@ import random
 import subprocess
 import shutil, errno
 
+from importlib import resources
 from core.hashing import Hasher
 from argparse import ArgumentParser
 from core.utils import Colors, banner
@@ -45,7 +46,6 @@ def main():
 
     # Creating the arguments for the stageless subcommand
     parser_stageless.add_argument("-p", "--payload", help="Shellcode to be packed", required=True)
-    parser_stageless.add_argument("-o", "--output", type=str, help="Output path where the loader is gonna be saved.")
     
     parser_stageless.add_argument("-e", "--encrypt", action="store_true", help="Encrypt the shellcode via AES-128-CBC.")
     parser_stageless.add_argument("-s", "--scramble", action="store_true", help="Scramble the loader's functions and variables.")
@@ -70,8 +70,8 @@ def main():
         print(Colors.light_yellow("[+] Starting the process..."))
 
         # We make a temporary folder called ".ctfpacker" and copy the template files to this folder.
-        cr_directory    = os.getcwd()
-        src_directory   = rf'{cr_directory}/templates/staged'
+        cr_directory    = os.path.dirname(os.path.abspath(__file__))
+        src_directory   = resources.files("templates").joinpath("staged")
         dst_directory   = f'{cr_directory}/.ctfpacker'
 
         # Copying the files from the templates folder to the temporary folder
@@ -179,7 +179,7 @@ def main():
                 with open(f"{dst_directory}/main.c", "w") as file:
                     file.writelines(main_data)
 
-                print(Colors.green(f"[+] Payload encrypted and saved to {args.output}.bin !"))
+                print(Colors.green(f"[+] Payload encrypted and saved to {os.getcwd()}/{args.output}.bin !"))
 
 
             # If encryption is not wanted (for whatever reason)
@@ -389,9 +389,10 @@ def main():
         print(Colors.light_yellow("[+] Starting the process..."))
 
          # We make a temporary folder called ".ctfpacker" and copy the template files to this folder.
-        cr_directory    = os.getcwd()
-        src_directory   = rf'{cr_directory}/templates/stageless'
+        cr_directory    = os.path.dirname(os.path.abspath(__file__))
+        src_directory   = resources.files("templates").joinpath("stageless")
         dst_directory   = f'{cr_directory}/.ctfpacker'
+
 
         # Copying the files from the templates folder to the temporary folder
         try:
