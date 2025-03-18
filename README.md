@@ -331,7 +331,7 @@ I'll probably add some kind of argument in the future for you to choose between 
 
 ## To-Do
 
-- [ ] Maybe adding a setup.py file to install via pip / pipx
+- [x] Maybe adding a setup.py file to install via pip / pipx
 - [ ] Other templates with different injection techniques
 - [ ] Adding AMSI / ETW bypass (depends on what injection technique I am going to put here)
 
