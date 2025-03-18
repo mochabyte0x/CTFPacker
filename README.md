@@ -23,6 +23,7 @@
   * [Usage](#usage)
     + [Staged](#staged)
     + [Stageless](#stageless)
+    + [Target Process Injection](target-process-injection)
   * [To-Do](#to-do)
   * [Detections](#detections)
   * [Credits - References](#credits---references)
@@ -71,7 +72,7 @@ x86_64-w64-mingw32-clang --version
 make --version
 ```
 
-Itt's a bit different on Windows. You need to install the MinGW-w64 toolchain by installing MSYS2 first.
+It's a bit of a different story on Windows. You need to install the MinGW-w64 toolchain by installing MSYS2 first.
 
 ```powershell
 # Go there and install this
@@ -243,7 +244,7 @@ Serving HTTP on :: port 8080 (http://[::]:8080/) ...
 
 This is fairly simple. The shellcode will be included into the loader. I recommend you to use the encryption arg `-e`. Otherwise the signature-based detection will likely catch it.
 
-```
+```powershell
 C:\Code\CTFPacker>ls
 core  custom_certs  main.py  requirements.txt templates
 
@@ -290,6 +291,27 @@ C:\msys64\mingw64\bin\clang -static -O0 -Wall -w -o ctfloader.exe api_hashing.o 
 C:\Code\CTFPacker>ls
 core  ctfloader.exe  custom_certs  main.py  requirements.txt  shellcode.bin  templates
 ```
+
+### Target Process Injection
+
+I won't go into detail about how the EarlyBird APC Injection technique works, but one thing you should know is that it needs to *create* a process. The current target process is `RuntimeBroker.exe`. IF (I encountered that in some HTB Pro Labs) `RuntimeBroker.exe` is NOT present on the system (for whatever reasons), you should change the source code and target another process.
+
+To do that, you can navigate into the `main.c` file (staged or stageless) and modify this value at the top
+
+```c
+#define TARGET_PROCESS "RuntimeBroker.exe"
+```
+
+You should choose a binary that is present in the `System32` directory. For example, this should also work:
+
+```c
+#define TARGET_PROCESS "svchost.exe"
+```
+
+I'll probably add some kind of argument in the future for you to choose between a few target processes.
+
+>[!NOTE]
+> Be aware that some processes will be easier to detect than others. In my experience, doing the APC Injection into `svchost` for example is more likely to be catched.  
 
 ## To-Do
 
