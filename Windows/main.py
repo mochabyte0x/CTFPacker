@@ -338,7 +338,8 @@ def main():
                 print(Colors.green("[i] Signing selected."))
                 print(Colors.light_yellow("[+] Signing the loader..."))
                 
-                pfx_path = f"{cr_directory}\\custom_certs\\sign_putty.pfx"
+                osslsigncode_path = str(resources.files("custom_certs").joinpath("osslsigncode.exe"))
+                pfx_path = str(resources.files("custom_certs").joinpath("sign_putty.pfx"))
                 pfx_password = "Password"
                 input_binary = "ctfloader.exe"
                 signed_binary = "ctfloader_signed.exe"
@@ -350,7 +351,7 @@ def main():
                     os.remove("ctfloader_signed.exe")
 
                 subprocess.run([
-                    f"{cr_directory}\\custom_certs\\osslsigncode.exe",
+                    osslsigncode_path,
                     "sign",
                     "-pkcs12", pfx_path,
                     "-pass", pfx_password,
@@ -638,7 +639,8 @@ def main():
                 print(Colors.green("[i] Signing selected."))
                 print(Colors.light_yellow("[+] Signing the loader..."))
                 
-                pfx_path = f"{cr_directory}\\custom_certs\\sign_putty.pfx"
+                osslsigncode_path = str(resources.files("custom_certs").joinpath("osslsigncode.exe"))
+                pfx_path = str(resources.files("custom_certs").joinpath("sign_putty.pfx"))
                 pfx_password = "Password"
                 input_binary = "ctfloader.exe"
                 signed_binary = "ctfloader_signed.exe"
@@ -650,7 +652,7 @@ def main():
                     os.remove("ctfloader_signed.exe")
 
                 subprocess.run([
-                    f"{cr_directory}\\custom_certs\\osslsigncode.exe",
+                    osslsigncode_path,
                     "sign",
                     "-pkcs12", pfx_path,
                     "-pass", pfx_password,
