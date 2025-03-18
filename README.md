@@ -97,17 +97,32 @@ You should also check under `C:\msys64\mingw64\bin`. This is a common place wher
 
 After the basis installation, don't forget to install the python requirements ! Otherwise the packer will not work :D !
 
+**Linux**:
 ```bash
-# Create a virtual env if you want, or use the --break-system-packages if you're brave enough xD
-python3 -m pip install -r requirements.txt --break-system-packages
+# Via pipx (preferred way)
+cd CTFPacker
+python3 -m pipx install . 
 
-# The proper way
+# Via manual virtual environment
+cd CTFPacker
 python3 -m venv env
 source env/bin/activate
-python3 -m pip install -r requirements.txt
+python3 -m pip install .
 
 # Once you're done using the tool
 deactivate
+
+# Old fashion
+cd CTFPacker
+python3 -m pip install -r requirements.txt --break-system-packages
+```
+**Windows**:
+```powershell
+# Via pip
+cd CTFPacker
+python3 -m pip install .
+
+# Done ! :)
 ```
 
 ### Makefile
