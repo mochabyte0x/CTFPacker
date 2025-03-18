@@ -23,6 +23,7 @@
   * [Usage](#usage)
     + [Staged](#staged)
     + [Stageless](#stageless)
+  * [To-Do](#to-do)
   * [Detections](#detections)
   * [Credits - References](#credits---references)
 
@@ -289,6 +290,12 @@ C:\msys64\mingw64\bin\clang -static -O0 -Wall -w -o ctfloader.exe api_hashing.o 
 C:\Code\CTFPacker>ls
 core  ctfloader.exe  custom_certs  main.py  requirements.txt  shellcode.bin  templates
 ```
+
+## To-Do
+
+- [ ] Maybe adding a setup.py file to install via pip / pipx
+- [ ] Other templates with different injection techniques
+- [ ] Adding AMSI / ETW bypass (depends on what injection technique I am going to put here)
 
 ## Detections
 
