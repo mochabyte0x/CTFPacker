@@ -35,7 +35,7 @@ This repository has been created to facilitate AV evasion during CTFs and/or pen
 ## General Information
 
 >[!CAUTION]
->This tool is designed for authorized operations only. I AM NOT RESPONSIBLE FOR YOU ACTIONS. DON'T DO BAD STUFF.
+>This tool is designed for authorized operations only. I AM NOT RESPONSIBLE FOR YOUR ACTIONS. DON'T DO BAD STUFF.
 
 >[!NOTE]
 >- The techniques used in the loader are nothing new. The loader generated from this packer will probably NOT evade modern AVs / EDRs. Do not expect that or anything ground breaking.
