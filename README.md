@@ -71,6 +71,13 @@ sudo apt install clang mingw-w64 make
 # Verify installation
 x86_64-w64-mingw32-clang --version
 make --version
+
+# If x86_64-w64-mingw32-clang is not present try this
+clang --version
+# or
+clang -v
+
+# If this is the case, refer to the chapter "Makefile" to replace the compiler in the Makefile of the templates
 ```
 
 It's a bit of a different story on Windows. You need to install the MinGW-w64 toolchain by installing MSYS2 first.
@@ -101,7 +108,8 @@ After the basis installation, don't forget to install the python requirements ! 
 ```bash
 # Via pipx (preferred way)
 cd CTFPacker
-python3 -m pipx install . 
+python3 -m pipx install .
+# You can use ctfpacker globaly now
 
 # Via manual virtual environment
 cd CTFPacker
@@ -115,6 +123,7 @@ deactivate
 # Old fashion
 cd CTFPacker
 python3 -m pip install -r requirements.txt --break-system-packages
+python3 main.py -h
 ```
 **Windows**:
 ```powershell
@@ -132,6 +141,13 @@ You should NOT modify the Makefile unless you know what you are doing ! BUT, the
 ```makefile
 # Verify this line
 CLANG    := x86_64-w64-mingw32-clang
+```
+
+Replace it with the appropriate CLANG compiler
+
+```makefile
+# Example
+CLANG    := clang
 ```
 
 ## Usage
@@ -184,13 +200,11 @@ options:
   -h, --help            show this help message and exit
   -p PAYLOAD, --payload PAYLOAD
                         Shellcode to be packed
-  -o OUTPUT, --output OUTPUT
-                        Output path where the loader is gonna be saved.
   -e, --encrypt         Encrypt the shellcode via AES-128-CBC.
   -s, --scramble        Scramble the loader's functions and variables.
   -si, --sign           Sign the loader with a random certificate.
 
-Example usage: python main.py stageless -p shellcode.bin -o shellcode -e -s -si
+Example usage: python main.py stageless -p shellcode.bin -e -s -si
 ```
 
 ### Staged
@@ -264,7 +278,7 @@ This is fairly simple. The shellcode will be included into the loader. I recomme
 C:\Code\CTFPacker>ls
 core  custom_certs  main.py  requirements.txt templates
 
-C:\Code\CTFPacker>python main.py stageless -p "C:\Code\CTFPacker\calc.bin" -o shellcode -e -s
+C:\Code\CTFPacker>python main.py stageless -p "C:\Code\CTFPacker\calc.bin" -e -s
 
 
 
