@@ -24,6 +24,7 @@
     + [Staged](#staged)
     + [Stageless](#stageless)
     + [Target Process Injection](#target-process-injection)
+  * [Demo](#demo)
   * [To-Do](#to-do)
   * [Detections](#detections)
   * [Credits - References](#credits---references)
@@ -342,6 +343,10 @@ I'll probably add some kind of argument in the future for you to choose between 
 
 >[!NOTE]
 > Be aware that some processes will be easier to detect than others. In my experience, doing the APC Injection into `svchost` for example is more likely to be catched.  
+
+## Demo
+
+https://github.com/user-attachments/assets/4aa56672-bcfb-424b-aa89-a919b514ae35
 
 ## To-Do
 
