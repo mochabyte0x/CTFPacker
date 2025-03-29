@@ -137,7 +137,7 @@ python3 -m pip install .
 
 ### Makefile
 
-You should NOT modify the Makefile unless you know what you are doing ! BUT, there's one thing you should check BEFORE the installation process. The first line of the Makefile indicates your compiler. Verify if the compiler matches with the one you installed earlier on your system. You can refer to the appropriate Makefile (windows / linux) in this repo.
+You should NOT modify the Makefile unless you know what you are doing ! BUT, there's one thing you should check BEFORE the python installation process. The first line of the Makefile indicates your compiler. Verify if the compiler matches with the one you installed earlier on your system. You can refer to the appropriate Makefile (windows / linux) in this repo.
 
 ```makefile
 # Verify this line
