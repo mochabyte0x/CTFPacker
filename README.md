@@ -232,7 +232,7 @@ python main.py staged -p "C:\Code\CTFPacker\calc.bin" -i 192.168.2.121 -po 8080 
 
 
 
-        Author: B0lg0r0v
+        Author: mocha
         https://mochabyte.xyz
 
 [i] Staged Payload selected.
@@ -296,7 +296,7 @@ C:\Code\CTFPacker>python main.py stageless -p "C:\Code\CTFPacker\calc.bin" -e -s
 
 
 
-        Author: B0lg0r0v
+        Author: mocha
         https://mochabyte.xyz
 
 [i] Stageless Payload selected.
