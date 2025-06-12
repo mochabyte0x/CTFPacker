@@ -58,7 +58,7 @@ This repository has been created to facilitate AV evasion during CTFs and/or pen
 
 Depending on your OS, the installation will slightly differ. In general, make sure you have the following stuff installed:
 
-- CLANG compiler (x86_64-w64-mingw32-clang on linux)
+- CLANG compiler
 - MinGW-w64 Toolchain
 - Make
 
