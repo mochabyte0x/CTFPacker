@@ -67,14 +67,12 @@ If I am not mistaken, those are by default installed on KALI Linux. However, if 
 ```bash
 # Assuming Debian based system
 sudo apt update
-sudo apt install clang mingw-w64 make
+sudo apt install clang pipx mingw-w64 make lld
 
 # Verify installation
-x86_64-w64-mingw32-clang --version
+clang --version
 make --version
 
-# If x86_64-w64-mingw32-clang is not present try this
-clang --version
 # or
 clang -v
 
@@ -141,14 +139,14 @@ You should NOT modify the Makefile unless you know what you are doing ! BUT, the
 
 ```makefile
 # Verify this line
-CLANG    := x86_64-w64-mingw32-clang
+CLANG    := clang
 ```
 
 Replace it with the appropriate CLANG compiler
 
 ```makefile
 # Example
-CLANG    := clang
+CLANG    := x86_64-w64-mingw32-clang
 ```
 
 ## Usage
