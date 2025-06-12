@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
 
-Author:         @B0lg0r0v (Arthur Minasyan)
-X (Twitter):    @B0lg0r0v
-LinkedIn:       https://www.linkedin.com/in/arthur-minasyan-b582b7233/
+Author:         mocha
+X (Twitter):    @mochabyte0x
 
 '''
 import os
@@ -22,7 +21,7 @@ from core.encryption import Encryption
 def main():
 
     # Creating the parser first
-    parser              = ArgumentParser(description="CTFPacker", epilog="Author: @B0lg0r0v (Arthur Minasyan)")
+    parser              = ArgumentParser(description="CTFPacker", epilog="Author: @mochabyte")
     subparsers          = parser.add_subparsers(dest="commands", help="Staged or Stageless Payloads", required=True)
 
     # Creating the subparsers
@@ -51,7 +50,7 @@ def main():
     parser_stageless.add_argument("-s", "--scramble", action="store_true", help="Scramble the loader's functions and variables.")
     parser_stageless.add_argument("-si", "--sign", action="store_true", help="Sign the loader with a random certificate.")
 
-    parser_stageless.epilog = "Example usage: python main.py stageless -p shellcode.bin -o shellcode -e -s -si"
+    parser_stageless.epilog = "Example usage: python main.py stageless -p shellcode.bin -e -s -si"
 
     # Parsing the arguments
     args = parser.parse_args()

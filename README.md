@@ -57,7 +57,7 @@ This repository has been created to facilitate AV evasion during CTFs and/or pen
 
 Depending on your OS, the installation will slightly differ. In general, make sure you have the following stuff installed:
 
-- CLANG compiler (x86_64-w64-mingw32-clang on linux)
+- CLANG compiler 
 - MinGW-w64 Toolchain
 - Make
 
@@ -66,10 +66,10 @@ If I am not mistaken, those are by default installed on KALI Linux. However, if 
 ```bash
 # Assuming Debian based system
 sudo apt update
-sudo apt install clang mingw-w64 make
+sudo apt install clang make pipx mingw-w64 lld
 
 # Verify installation
-x86_64-w64-mingw32-clang --version
+clang --version
 make --version
 ```
 
@@ -84,7 +84,7 @@ pacman -Syu
 pacman -S mingw-w64-x86_64-clang
 
 # Veryify installation
-x86_64-w64-mingw32-clang --version
+clang --version
 
 # Install make
 pacman -S make
@@ -100,10 +100,10 @@ After the basis installation, don't forget to install the python requirements ! 
 **Linux**:
 ```bash
 # Via pipx (preferred way)
-cd CTFPacker
+cd CTFPacker/Linux
 python3 -m pipx install . 
 
-# Via manual virtual environment
+# Manually create a virtual environment
 cd CTFPacker
 python3 -m venv env
 source env/bin/activate
@@ -119,7 +119,7 @@ python3 -m pip install -r requirements.txt --break-system-packages
 **Windows**:
 ```powershell
 # Via pip
-cd CTFPacker
+cd CTFPacker\Windows
 python3 -m pip install .
 
 # Done ! :)
@@ -131,7 +131,7 @@ You should NOT modify the Makefile unless you know what you are doing ! BUT, the
 
 ```makefile
 # Verify this line
-CLANG    := x86_64-w64-mingw32-clang
+CLANG    := clang
 ```
 
 ## Usage

@@ -3,13 +3,20 @@
 # DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU ARE DOING
 ###############################################################################
 
+TARGET_TRIPLE := x86_64-w64-mingw32
+
 # If on Windows/MSYS2, you might have "x86_64-w64-mingw32-clang" 
-CLANG    := x86_64-w64-mingw32-clang
+CLANG    := clang --target=$(TARGET_TRIPLE) -fuse-ld=lld
 
 # Compile flags for C source
-CFLAGS   := -static -O0 -Wall -w
+CFLAGS   := -static -O0 -Wall -w -fms-extensions -fdeclspec
 
 LDFLAGS  := -Wl,--disable-auto-import -s
+
+# MinGW-w64 include/lib paths
+GCC_WIN32_PATH := $(shell find /usr/lib/gcc/$(TARGET_TRIPLE)/ -type d -name "*win32" | head -n 1)
+INCLUDE  := -I/usr/$(TARGET_TRIPLE)/include
+LIBPATH := -L$(GCC_WIN32_PATH)
 
 # Libraries needed:
 LIBS     := -lwinhttp -lntdll
@@ -43,13 +50,13 @@ all: $(TARGET)
 
 # Link rule: combine all object files into final .exe
 $(TARGET): $(C_OBJS) $(ASM_OBJ)
-	$(CLANG) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(CLANG) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBPATH) $(LIBS)
 
 ###############################################################################
 # Compile each .c -> .o
 ###############################################################################
 %.o: %.c
-	$(CLANG) $(CFLAGS) -c $< -o $@
+	$(CLANG) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 ###############################################################################
 # Assemble NASM .asm -> .o
