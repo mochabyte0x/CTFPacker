@@ -67,7 +67,7 @@ If I am not mistaken, those are by default installed on KALI Linux. However, if 
 ```bash
 # Assuming Debian based system
 sudo apt update
-sudo apt install clang pipx mingw-w64 make lld nasm
+sudo apt install clang pipx mingw-w64 make lld nasm osslsigncode
 
 # Verify installation
 clang --version
