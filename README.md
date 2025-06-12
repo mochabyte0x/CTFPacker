@@ -24,6 +24,7 @@
     + [Staged](#staged)
     + [Stageless](#stageless)
     + [Target Process Injection](#target-process-injection)
+  * [Demo](#demo)
   * [To-Do](#to-do)
   * [Detections](#detections)
   * [Credits - References](#credits---references)
@@ -35,7 +36,7 @@ This repository has been created to facilitate AV evasion during CTFs and/or pen
 ## General Information
 
 >[!CAUTION]
->This tool is designed for authorized operations only. I AM NOT RESPONSIBLE FOR YOU ACTIONS. DON'T DO BAD STUFF.
+>This tool is designed for authorized operations only. I AM NOT RESPONSIBLE FOR YOUR ACTIONS. DON'T DO BAD STUFF.
 
 >[!NOTE]
 >- The techniques used in the loader are nothing new. The loader generated from this packer will probably NOT evade modern AVs / EDRs. Do not expect that or anything ground breaking.
@@ -57,7 +58,7 @@ This repository has been created to facilitate AV evasion during CTFs and/or pen
 
 Depending on your OS, the installation will slightly differ. In general, make sure you have the following stuff installed:
 
-- CLANG compiler 
+- CLANG compiler (x86_64-w64-mingw32-clang on linux)
 - MinGW-w64 Toolchain
 - Make
 
@@ -66,11 +67,18 @@ If I am not mistaken, those are by default installed on KALI Linux. However, if 
 ```bash
 # Assuming Debian based system
 sudo apt update
-sudo apt install clang make pipx mingw-w64 lld
+sudo apt install clang mingw-w64 make
 
 # Verify installation
-clang --version
+x86_64-w64-mingw32-clang --version
 make --version
+
+# If x86_64-w64-mingw32-clang is not present try this
+clang --version
+# or
+clang -v
+
+# If this is the case, refer to the chapter "Makefile" to replace the compiler in the Makefile of the templates
 ```
 
 It's a bit of a different story on Windows. You need to install the MinGW-w64 toolchain by installing MSYS2 first.
@@ -84,7 +92,7 @@ pacman -Syu
 pacman -S mingw-w64-x86_64-clang
 
 # Veryify installation
-clang --version
+x86_64-w64-mingw32-clang --version
 
 # Install make
 pacman -S make
@@ -100,10 +108,11 @@ After the basis installation, don't forget to install the python requirements ! 
 **Linux**:
 ```bash
 # Via pipx (preferred way)
-cd CTFPacker/Linux
-python3 -m pipx install . 
+cd CTFPacker
+python3 -m pipx install .
+# You can use ctfpacker globaly now
 
-# Manually create a virtual environment
+# Via manual virtual environment
 cd CTFPacker
 python3 -m venv env
 source env/bin/activate
@@ -115,11 +124,12 @@ deactivate
 # Old fashion
 cd CTFPacker
 python3 -m pip install -r requirements.txt --break-system-packages
+python3 main.py -h
 ```
 **Windows**:
 ```powershell
 # Via pip
-cd CTFPacker\Windows
+cd CTFPacker
 python3 -m pip install .
 
 # Done ! :)
@@ -127,10 +137,17 @@ python3 -m pip install .
 
 ### Makefile
 
-You should NOT modify the Makefile unless you know what you are doing ! BUT, there's one thing you should check after the installation process. The first line of the Makefile indicates your compiler. Verify if the compiler matches with the one you installed earlier on your system. You can refer to the appropriate Makefile (windows / linux) in this repo.
+You should NOT modify the Makefile unless you know what you are doing ! BUT, there's one thing you should check BEFORE the python installation process. The first line of the Makefile indicates your compiler. Verify if the compiler matches with the one you installed earlier on your system. You can refer to the appropriate Makefile (windows / linux) in this repo.
 
 ```makefile
 # Verify this line
+CLANG    := x86_64-w64-mingw32-clang
+```
+
+Replace it with the appropriate CLANG compiler
+
+```makefile
+# Example
 CLANG    := clang
 ```
 
@@ -184,13 +201,11 @@ options:
   -h, --help            show this help message and exit
   -p PAYLOAD, --payload PAYLOAD
                         Shellcode to be packed
-  -o OUTPUT, --output OUTPUT
-                        Output path where the loader is gonna be saved.
   -e, --encrypt         Encrypt the shellcode via AES-128-CBC.
   -s, --scramble        Scramble the loader's functions and variables.
   -si, --sign           Sign the loader with a random certificate.
 
-Example usage: python main.py stageless -p shellcode.bin -o shellcode -e -s -si
+Example usage: python main.py stageless -p shellcode.bin -e -s -si
 ```
 
 ### Staged
@@ -217,8 +232,8 @@ python main.py staged -p "C:\Code\CTFPacker\calc.bin" -i 192.168.2.121 -po 8080 
 
 
 
-        Author: B0lg0r0v
-        https://arthurminasyan.com
+        Author: mocha
+        https://mochabyte.xyz
 
 [i] Staged Payload selected.
 [+] Starting the process...
@@ -264,7 +279,7 @@ This is fairly simple. The shellcode will be included into the loader. I recomme
 C:\Code\CTFPacker>ls
 core  custom_certs  main.py  requirements.txt templates
 
-C:\Code\CTFPacker>python main.py stageless -p "C:\Code\CTFPacker\calc.bin" -o shellcode -e -s
+C:\Code\CTFPacker>python main.py stageless -p "C:\Code\CTFPacker\calc.bin" -e -s
 
 
 
@@ -281,8 +296,8 @@ C:\Code\CTFPacker>python main.py stageless -p "C:\Code\CTFPacker\calc.bin" -o sh
 
 
 
-        Author: B0lg0r0v
-        https://arthurminasyan.com
+        Author: mocha
+        https://mochabyte.xyz
 
 [i] Stageless Payload selected.
 [+] Starting the process...
@@ -328,6 +343,10 @@ I'll probably add some kind of argument in the future for you to choose between 
 
 >[!NOTE]
 > Be aware that some processes will be easier to detect than others. In my experience, doing the APC Injection into `svchost` for example is more likely to be catched.  
+
+## Demo
+
+https://github.com/user-attachments/assets/4aa56672-bcfb-424b-aa89-a919b514ae35
 
 ## To-Do
 
