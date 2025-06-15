@@ -33,6 +33,8 @@
 
 This repository has been created to facilitate AV evasion during CTFs and/or pentest & red team exams. The goal is to focus more on pwning rather than struggeling with evasion !
 
+Check out my blog post for more infos: [Evade Modern AVs in 2025](https://mochabyte.xyz/posts/Evade-Modern-AVs-in-2025/)
+
 ## General Information
 
 >[!CAUTION]
