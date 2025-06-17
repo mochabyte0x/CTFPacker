@@ -74,4 +74,4 @@ def banner():
 
                                                                   
     """)+
-    ("\n\tAuthor: B0lg0r0v") +("\n\thttps://arthurminasyan.com\n"))
+    ("\n\tAuthor: mocha") +("\n\thttps://mochabyte.xyz\n"))

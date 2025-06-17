@@ -3,69 +3,102 @@
 # DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU ARE DOING
 ###############################################################################
 
-TARGET_TRIPLE := x86_64-w64-mingw32
+# ───────────────────────────────────────────────────────────────────────────────
+# 1. Toolchain – Clang/LLD cross‑targeting MinGW‑w64
+# ───────────────────────────────────────────────────────────────────────────────
+.SUFFIXES:
 
-# If on Windows/MSYS2, you might have "x86_64-w64-mingw32-clang" 
-CLANG    := clang --target=$(TARGET_TRIPLE) -fuse-ld=lld
 
-# Compile flags for C source
-CFLAGS   := -static -O0 -Wall -w -fms-extensions -fdeclspec
+TARGET_TRIPLE ?= x86_64-w64-mingw32
+CLANG ?= clang --target=$(TARGET_TRIPLE) -fuse-ld=lld
 
-LDFLAGS  := -Wl,--disable-auto-import -s
-
-# MinGW-w64 include/lib paths
+# MinGW‑w64 include / lib helper paths (auto‑detect the GCC win32 subtree)
 GCC_WIN32_PATH := $(shell find /usr/lib/gcc/$(TARGET_TRIPLE)/ -type d -name "*win32" | head -n 1)
-INCLUDE  := -I/usr/$(TARGET_TRIPLE)/include
-LIBPATH := -L$(GCC_WIN32_PATH)
+INCLUDE_DIR     := /usr/$(TARGET_TRIPLE)/include
+INCLUDE         := -I$(INCLUDE_DIR)
+LIBPATH         := -L$(GCC_WIN32_PATH)
 
-# Libraries needed:
-LIBS     := -lwinhttp -lntdll
+# ───────────────────────────────────────────────────────────────────────────────
+# 2. Build format selector (EXE is default)
+# ───────────────────────────────────────────────────────────────────────────────
+FORMAT ?= EXE                  # { EXE | DLL }
 
-# NASM flags
-ASFLAGS  := -f win64  # produce 64-bit COFF objects
-
-# List all your C source files here:
-C_SRCS := \
+# ───────────────────────────────────────────────────────────────────────────────
+# 3. Source files
+# ───────────────────────────────────────────────────────────────────────────────
+COMMON_SRCS := \
 	api_hashing.c \
-	inject.c \
-	main.c \
-	unhook.c \
+	inject.c       \
+	unhook.c       \
 	whispers.c
 
-# Corresponding .o object files
+ifeq ($(FORMAT),DLL)
+	MAIN_SRC := main_dll.c
+	TARGET   := ctfloader.dll
+else
+	MAIN_SRC := main.c
+	TARGET   := ctfloader.exe
+endif
+
+C_SRCS := $(COMMON_SRCS) $(MAIN_SRC)
 C_OBJS := $(C_SRCS:.c=.o)
 
-# Assembly source and its object
+# ───────────────────────────────────────────────────────────────────────────────
+# 4. Assembly helper (Whispers)
+# ───────────────────────────────────────────────────────────────────────────────
 ASM_SRC := whispers-asm.x64.asm
 ASM_OBJ := whispers-asm.o
+ASFLAGS := -f win64
 
-# Final executable name
-TARGET  := ctfloader.exe
+# ───────────────────────────────────────────────────────────────────────────────
+# 5. Flags
+# ───────────────────────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────────────────────
+# 5. Flags (mirror original baseline)
+# ───────────────────────────────────────────────────────────────────────────────
+# Baseline flags from the original CTFPacker Makefile:
+#   -O0 -Wall -w -fms-extensions -fdeclspec -static
+# We keep them intact so behaviour matches the pre‑DLL build.
+CFLAGS_BASE  := -O0 -Wall -w -fms-extensions -fdeclspec -static
+LDFLAGS_BASE := -Wl,--disable-auto-import -s
+LIBS         := -lwinhttp -lntdll
 
-###############################################################################
-# Default rule: build the final .exe
-###############################################################################
+ifeq ($(FORMAT),DLL)
+	# DLL build: drop static CRT + create import‑lib
+	CFLAGS  := $(filter-out -static,$(CFLAGS_BASE)) -DCTF_AS_DLL
+	LDFLAGS := $(LDFLAGS_BASE) -shared -Wl,--out-implib,libctfloader.a
+else
+	CFLAGS  := $(CFLAGS_BASE)
+	LDFLAGS := $(LDFLAGS_BASE)
+endif
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 6. Phony targets
+# ───────────────────────────────────────────────────────────────────────────────
+.PHONY: all exe dll clean
+
 all: $(TARGET)
 
-# Link rule: combine all object files into final .exe
-$(TARGET): $(C_OBJS) $(ASM_OBJ)
-	$(CLANG) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBPATH) $(LIBS)
+exe:
+	$(MAKE) FORMAT=EXE
 
-###############################################################################
-# Compile each .c -> .o
-###############################################################################
+dll:
+	$(MAKE) FORMAT=DLL
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 7. Linking & compilation rules
+# ───────────────────────────────────────────────────────────────────────────────
+$(TARGET): $(C_OBJS) $(ASM_OBJ)
+	$(CLANG) $(CFLAGS) $(LIBPATH) $^ $(LDFLAGS) $(LIBS) -o $@
+
 %.o: %.c
 	$(CLANG) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
-###############################################################################
-# Assemble NASM .asm -> .o
-###############################################################################
 $(ASM_OBJ): $(ASM_SRC)
 	nasm $(ASFLAGS) $< -o $@
 
-###############################################################################
-# Housekeeping
-###############################################################################
-.PHONY: clean
+# ───────────────────────────────────────────────────────────────────────────────
+# 8. House‑keeping
+# ───────────────────────────────────────────────────────────────────────────────
 clean:
-	rm -f *.o *.obj $(TARGET)
+	rm -f $(C_OBJS) $(ASM_OBJ) $(TARGET) libctfloader.a
