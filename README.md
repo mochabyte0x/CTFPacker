@@ -21,6 +21,7 @@
   * [Installation](#installation)
     + [Makefile](#makefile)
   * [Usage](#usage)
+    + [Format option](#format-option)
     + [Staged](#staged)
     + [Stageless](#stageless)
     + [Target Process Injection](#target-process-injection)
