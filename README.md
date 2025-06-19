@@ -379,6 +379,7 @@ https://github.com/user-attachments/assets/4aa56672-bcfb-424b-aa89-a919b514ae35
 - Undetected on Windows 10 Defender (2025-03-18, Version 1.425.90.0)
 - Undetected on the latest Sophos Home Premium (Version 2023.2.2.2)
    ![image](https://github.com/user-attachments/assets/54a5539c-8eb8-490e-a189-33fbf7be9867)
+- Undetected on the latest Kasperky Premium (20.06.2025)
 
 ## Credits - References
 
