@@ -6,10 +6,10 @@ setup(
     description='Cross platform (Linux / Windows) shellcode packer for CTFs and pentest / red team exams',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/B0lg0r0v/CTFPacker',
-    author='B0lg0r0v',
-    author_email='contact@arthurminasyan.com',
-    maintainer='B0lg0r0v',
+    url='https://github.com/mochabyte0x/CTFPacker',
+    author='mochabyte0x',
+    author_email='contact@mochabyte.xyz',
+    maintainer='mochabyte0x',
     license='MIT',
     install_requires=['colorama', 
                       'pycryptodome'],
@@ -27,5 +27,5 @@ setup(
             'ctfpacker=main:main'
         ],
     },
-    platforms=['Linux', 'Windows']
+    platforms=['Linux']
 )
