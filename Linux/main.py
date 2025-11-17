@@ -413,7 +413,7 @@ def main():
 
                     print(Colors.green("[+] Loader signed !"))
 
-                if args.pfx is False:
+                else:
                     
                     # Everything has been modified, we can now compile the loader
                     os.system(f"cd '{dst_directory}' && make clean && make FORMAT=EXE")
@@ -774,7 +774,7 @@ def main():
 
                     print(Colors.green("[+] Loader signed !"))
 
-                if args.pfx is None:
+                else:
                     
                     # Everything has been modified, we can now compile the loader
                     os.system(f"cd '{dst_directory}' && make clean && make FORMAT=EXE")
