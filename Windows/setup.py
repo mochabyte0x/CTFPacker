@@ -16,7 +16,7 @@ setup(
     py_modules=['main'],
     include_package_data=True,
     packages=find_packages(),
-    package_data={'custom_certs':['sign_putty.pfx', 'osslsigncode.exe'], 
+    package_data={'custom_certs':['cert1.pfx', 'cert2.pfx', 'osslsigncode.exe'], 
                   'templates': [
                                 'stageless/*', 
                                 'staged/*'
