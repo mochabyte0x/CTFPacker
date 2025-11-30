@@ -12,6 +12,10 @@
 ░ ░                                     ░  ░░ ░      ░  ░      ░  ░   ░     
 ░                                           ░                               
 ```
+
+> [!TIP]
+> Did CTFPacker help you with a penetration test engagement or in passing a certification exam? If so, please consider giving it a star ⭐! Your support would greatly help the project and motivate me to add more features or even rework it entirely into a much more capable packer!
+
 ## Table-Of-Contents
 
 - [CTFPacker](#ctfpacker)
