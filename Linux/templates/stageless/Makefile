@@ -8,15 +8,24 @@
 # ───────────────────────────────────────────────────────────────────────────────
 .SUFFIXES:
 
-
 TARGET_TRIPLE ?= x86_64-w64-mingw32
-CLANG ?= clang --target=$(TARGET_TRIPLE) -fuse-ld=lld
 
-# MinGW‑w64 include / lib helper paths (auto‑detect the GCC win32 subtree)
-GCC_WIN32_PATH := $(shell find /usr/lib/gcc/$(TARGET_TRIPLE)/ -type d -name "*win32" | head -n 1)
-INCLUDE_DIR     := /usr/$(TARGET_TRIPLE)/include
-INCLUDE         := -I$(INCLUDE_DIR)
-LIBPATH         := -L$(GCC_WIN32_PATH)
+CLANG_BIN := $(shell which $(TARGET_TRIPLE)-clang 2>/dev/null)
+
+ifeq ($(CLANG_BIN),)
+    CLANG_BIN := $(shell which clang 2>/dev/null)
+endif
+
+TOOLCHAIN_ROOT := $(shell dirname $(shell dirname $(CLANG_BIN)))
+
+CLANG      := $(CLANG_BIN) --target=$(TARGET_TRIPLE) -fuse-ld=lld
+INCLUDE    := -I$(TOOLCHAIN_ROOT)/$(TARGET_TRIPLE)/include
+LIBPATH    := -L$(TOOLCHAIN_ROOT)/$(TARGET_TRIPLE)/lib
+
+GCC_WIN32_PATH := $(shell find $(TOOLCHAIN_ROOT) -type d -name "*win32" | head -n 1)
+ifneq ($(GCC_WIN32_PATH),)
+    LIBPATH += -L$(GCC_WIN32_PATH)
+endif
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 2. Build format selector (EXE is default)
