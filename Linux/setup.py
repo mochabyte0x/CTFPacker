@@ -11,20 +11,25 @@ setup(
     author_email='contact@mochabyte.xyz',
     maintainer='mochabyte0x',
     license='MIT',
-    install_requires=['colorama', 
-                      'pycryptodome'],
-    py_modules=['main'],
+    install_requires=['colorama',
+                      'pycryptodome',
+                      'PyQt6>=6.6.0'],
+    py_modules=['main', 'gui_main'],
     include_package_data=True,
     packages=find_packages(),
-    package_data={'custom_certs':['cert1.pfx', 'cert2.pfx'], 
+    package_data={'custom_certs':['cert1.pfx', 'cert2.pfx'],
                   'templates': [
-                                'stageless/*', 
+                                'stageless/*',
                                 'staged/*'
-                            ]
+                            ],
+                  'gui': ['assets/*'],
     },
     entry_points={
         'console_scripts': [
             'ctfpacker=main:main'
+        ],
+        'gui_scripts': [
+            'ctfpacker-gui=gui.app:run_gui'
         ],
     },
     platforms=['Linux']

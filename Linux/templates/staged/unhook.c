@@ -89,7 +89,6 @@ LPVOID MapNtdll() {
     NTSTATUS status2 = pNtMapViewOfSection(hSection, NtCurrentProcess(), &pntdll, 0, 0, NULL, &ViewSize, 1, 0, PAGE_READONLY);
     if (!NT_SUCCESS(status2)) {
         //printf("[!] Failed in NtMapViewOfSection (%u)\n", GetLastError());
-        getchar();
         return NULL;
     }
     return pntdll;

