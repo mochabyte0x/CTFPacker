@@ -47,7 +47,9 @@ COMMON_SRCS := \
 	unhook.c       \
 	hellhall.c     \
 	sandbox.c      \
-	trampoline.c
+	trampoline.c   \
+	poolparty.c    \
+	timerqueue.c
 
 ifeq ($(FORMAT),DLL)
 	MAIN_SRC := main_dll.c

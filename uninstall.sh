@@ -33,7 +33,7 @@ if ! command -v apt-get &>/dev/null; then
 fi
 
 # ── Resolve the real (non-root) user ─────────────────────────────────────────
-REAL_USER="${SUDO_USER:-$USER}"
+REAL_USER="${SUDO_USER:-${USER:-$(logname 2>/dev/null || whoami)}}"
 REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 PIPX_BIN="$REAL_HOME/.local/bin"
 
@@ -164,6 +164,7 @@ APT_PKGS=(
     mingw-w64
     osslsigncode
     pipx
+    libxcb-cursor0
 )
 
 echo -e "${YELLOW}${BOLD}The following APT packages were installed by CTFPacker:${NC}"

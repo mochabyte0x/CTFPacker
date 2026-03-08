@@ -1,6 +1,8 @@
 # CTFPacker
 
-![CTFPacker](assets/Full-Logo-red-black.svg)
+<p align="center">
+  <img src="assets/Full-Logo-red-black.svg" width="500" alt="CTFPacker">
+</p> 
 
 > [!TIP]
 > Did CTFPacker help you with a penetration test engagement or in passing a certification exam? If so, please consider giving it a star ⭐! Your support would greatly help the project and motivate me to add more features or even rework it entirely into a much more capable packer!
@@ -17,7 +19,6 @@
     + [Format option](#format-option)
     + [Staged](#staged)
     + [Stageless](#stageless)
-  * [Demo](#demo)
   * [To-Do](#to-do)
   * [Detections](#detections)
   * [Credits - References](#credits---references)
@@ -45,23 +46,28 @@ Check out my blog post for more infos: [Evade Modern AVs in 2025](https://mochab
 - NTDLL unhooking via Known DLLs technique
 - Custom GetProcAddr & GetModuleHandle functions
 - Custom AES-128-CBC mode encryption & decryption
-- EarlyBird APC Injection or CopyFile2 progress callback execution 
+- Multiple injection techniques (see table below)
 - Possibility to choose between staged or stageless loader
 - "Polymorphic" behavior with the `-s` argument
 - Entropy reduction via embedded English text padding (`-er`)
 - Optional HTTPS transport for staged payloads
 
+### Injection Methods
+
+| Flag | Name | Type | Target | How it works |
+|------|------|------|--------|--------------|
+| `apc` | EarlyBird APC | Remote — spawned process | `RuntimeBroker.exe` / `svchost.exe` | Spawns the target in a suspended state, queues an APC to the main thread pointing at injected shellcode, then resumes it |
+| `copyfile2` | CopyFile2 Callback | **Self-injection** (local) | Own process | Uses the `CopyFile2` progress-callback mechanism to execute shellcode inside the current process — no remote handle required |
+| `tp_direct` | PoolParty TP_DIRECT | Remote — existing process | `RuntimeBroker.exe` / `svchost.exe` | Hijacks the target's `IoCompletion` handle, writes shellcode into the target's memory, crafts a `TP_DIRECT` struct and queues it via `ZwSetIoCompletion` — the target's thread pool dispatches the callback |
+| `wf_overwrite` | PoolParty WF Overwrite | Remote — existing process | `RuntimeBroker.exe` / `svchost.exe` | Hijacks the target's `TpWorkerFactory` handle, overwrites `StartRoutine` in the target's memory with the shellcode via `WriteProcessMemory`, then bumps the minimum thread count to force a new worker thread |
+| `timerqueue` | Timer Queue Callback | **Self-injection** (local) | Own process | Allocates RWX memory, copies shellcode, and registers it as a one-shot `CreateTimerQueueTimer` callback — the thread pool fires it after 100 ms; main thread sleeps indefinitely |
+
+> [!NOTE]
+> `apc` spawns a **new** instance of the target process; `tp_direct` and `wf_overwrite` require the target process to **already be running**; `copyfile2` and `timerqueue` are self-injection and don't touch any other process.
+
 ## Installation
 
-Make sure you have the following dependencies installed first:
-
-```bash
-# Assuming Debian based system (those are usually already on Kali)
-sudo apt update
-sudo apt install clang pipx mingw-w64 make lld nasm osslsigncode
-```
-
-Then just run the install script:
+Just run the install script:
 
 ```bash
 cd CTFPacker
@@ -95,7 +101,7 @@ Staged:
 
 ```
 usage: main.py staged [-h] -p PAYLOAD [-f {EXE,DLL}] [-apc {RuntimeBroker.exe,svchost.exe}]
-                      [-inj {apc,copyfile2}] -i IP_ADDRESS -po PORT -pa PATH [-o OUTPUT]
+                      [-inj {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}] -i IP_ADDRESS -po PORT -pa PATH [-o OUTPUT]
                       [--https] [--user-agent USER_AGENT] [-e] [-s] [-er]
                       [-pfx PFX] [-pfx-pass PFX_PASSWORD]
 
@@ -107,9 +113,12 @@ options:
                                 Format of the output file (default: EXE).
   -apc {RuntimeBroker.exe,svchost.exe}
                                 Target injection process (default: RuntimeBroker.exe).
-  -inj {apc,copyfile2}, --inject-method {apc,copyfile2}
-                                Injection method: 'apc' for EarlyBird APC or 'copyfile2' for
-                                CopyFile2 progress callback execution (default: apc).
+  -inj {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}, --inject-method {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}
+                                Injection method: 'apc' (EarlyBird APC), 'copyfile2' (CopyFile2
+                                callback), 'tp_direct' (PoolParty TP_DIRECT via IoCompletion),
+                                'wf_overwrite' (PoolParty WorkerFactory overwrite), or
+                                'timerqueue' (TimerQueue callback self-injection).
+                                Default: apc. tp_direct/wf_overwrite require an existing target process.
   -i IP_ADDRESS, --ip-address IP_ADDRESS
                                 IP address from where your shellcode is gonna be fetched.
   -po PORT, --port PORT         Port from where the HTTP connection is gonna fetch your shellcode.
@@ -131,7 +140,7 @@ Stageless:
 
 ```
 usage: main.py stageless [-h] -p PAYLOAD [-f {EXE,DLL}] [-apc {RuntimeBroker.exe,svchost.exe}]
-                         [-inj {apc,copyfile2}] [-e] [-s] [-er]
+                         [-inj {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}] [-e] [-s] [-er]
                          [-pfx PFX] [-pfx-pass PFX_PASSWORD]
 
 options:
@@ -142,9 +151,12 @@ options:
                                 Format of the output file (default: EXE).
   -apc {RuntimeBroker.exe,svchost.exe}
                                 Target injection process (default: RuntimeBroker.exe).
-  -inj {apc,copyfile2}, --inject-method {apc,copyfile2}
-                                Injection method: 'apc' for EarlyBird APC or 'copyfile2' for
-                                CopyFile2 progress callback execution (default: apc).
+  -inj {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}, --inject-method {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}
+                                Injection method: 'apc' (EarlyBird APC), 'copyfile2' (CopyFile2
+                                callback), 'tp_direct' (PoolParty TP_DIRECT via IoCompletion),
+                                'wf_overwrite' (PoolParty WorkerFactory overwrite), or
+                                'timerqueue' (TimerQueue callback self-injection).
+                                Default: apc. tp_direct/wf_overwrite require an existing target process.
   -e, --encrypt                 Encrypt the shellcode via AES-128-CBC.
   -s, --scramble                Scramble the loader's functions and variables.
   -er, --entropy-reduction      Reduce binary entropy by embedding English text padding.
@@ -157,11 +169,15 @@ Example usage: python main.py stageless -p shellcode.bin -e -s -inj copyfile2 -p
 
 ### GUI
 
-If you installed via pipx or `install.sh`, you can launch the GUI directly:
+If you installed via pipx or `install.sh`, you can launch the GUI directly or through your desktop app launcher:
 
 ```bash
 ctfpacker-gui
 ```
+
+<p align="center">
+  <img src="assets/GUI.png" width="300" alt="CTFPacker">
+</p> 
 
 The GUI exposes all the same options as the CLI but with real-time build output, a log panel, and a profile system. You can save/load build configurations as named profiles, and export/import them as `.ctfp` files to share across machines.
 
@@ -290,25 +306,19 @@ C:\Code\CTFPacker>ls
 core  ctfloader.exe  custom_certs  main.py  requirements.txt  shellcode.bin  templates
 ```
 
-## Demo
-
-https://github.com/user-attachments/assets/4aa56672-bcfb-424b-aa89-a919b514ae35
-
 ## To-Do
 
 - [x] Maybe adding a setup.py file to install via pip / pipx
 - [x] Other templates with different injection techniques (added CopyFile2 progress callback)
 - [x] PyQt6 GUI with build profiles & real-time output
 - [x] Adding AMSI / ETW bypass (depends on what injection technique I am going to put here)
-- [ ] More injection techniques
+- [x] More injection techniques (added PoolParty Variant 1 WorkerFactory overwrite + Variant 7 TP_DIRECT)
 
 ## Detections
 
-- Undetected on the latest Windows 11 Defender (2025-03-18, Version 1.425.89.0)
-- Undetected on Windows 10 Defender (2025-03-18, Version 1.425.90.0)
-- Undetected on the latest Sophos Home Premium (Version 2023.2.2.2)
-   ![image](https://github.com/user-attachments/assets/54a5539c-8eb8-490e-a189-33fbf7be9867)
-- Undetected on the latest Kasperky Premium (20.06.2025)
+- Undetected on the latest Windows 11 Defender (2026-03-08, Version 1.445.420.0)
+- Undetected on the latest Sophos Home Premium (Version 2024.3.3.1.0)
+- Undetected on the latest Kasperky Premium (08.03.2026)
 
 ## Credits - References
 
@@ -319,5 +329,6 @@ Most of the code is not from me. Here are the original authors:
 @ trickster0        - https://github.com/trickster0/TartarusGate  (indirect syscalls)
 @ SaadAhla          - https://github.com/SaadAhla/ntdlll-unhooking-collection
 @ VX-Underground    - https://github.com/vxunderground/VX-API/blob/main/VX-API/GetProcAddressDjb2.cpp
+@ SafeBreach-Labs   - https://github.com/SafeBreach-Labs/PoolParty (PoolParty thread pool injection)
 ```
 

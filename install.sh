@@ -36,7 +36,7 @@ fi
 # ── Resolve the real (non-root) user that invoked sudo ───────────────────────
 # pipx must be run as the actual user, not root, so binaries land in
 # ~/.local/bin of the invoking user rather than /root/.local/bin.
-REAL_USER="${SUDO_USER:-$USER}"
+REAL_USER="${SUDO_USER:-${USER:-$(logname 2>/dev/null || whoami)}}"
 REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 PIPX_BIN="$REAL_HOME/.local/bin"
 
@@ -85,6 +85,7 @@ APT_PKGS=(
     python3         # Python 3 interpreter
     pipx            # Isolated Python app installer
     osslsigncode    # PE code signing (optional, needed for -pfx)
+    libxcb-cursor0  # XCB cursor support required by Qt6 on some systems
 )
 
 log_info "Updating package lists..."

