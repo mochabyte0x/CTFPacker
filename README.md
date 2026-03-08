@@ -1,8 +1,13 @@
-# CTFPacker
-
 <p align="center">
   <img src="assets/Full-Logo-red-black.svg" width="500" alt="CTFPacker">
 </p> 
+</div>
+<div align="center">
+      
+![GitHub License](https://img.shields.io/github/license/mochabyte0x/CTFPacker?style=flat-square)
+![X (formerly Twitter) URL](https://img.shields.io/twitter/url?url=https%3A%2F%2Fx.com%2Fmochabyte0x&style=social)
+
+</div>
 
 > [!TIP]
 > Did CTFPacker help you with a penetration test engagement or in passing a certification exam? If so, please consider giving it a star ⭐! Your support would greatly help the project and motivate me to add more features or even rework it entirely into a much more capable packer!
