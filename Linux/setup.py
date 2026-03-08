@@ -1,10 +1,13 @@
 from setuptools import setup, find_packages
+from pathlib import Path
+
+HERE = Path(__file__).parent
 
 setup(
     name='ctfpacker',
     version='1.0',
     description='Cross platform (Linux / Windows) shellcode packer for CTFs and pentest / red team exams',
-    long_description=open('README.md').read(),
+    long_description=(HERE.parent / 'README.md').read_text(encoding='utf-8'),
     long_description_content_type='text/markdown',
     url='https://github.com/mochabyte0x/CTFPacker',
     author='mochabyte0x',
