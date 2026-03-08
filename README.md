@@ -176,7 +176,7 @@ ctfpacker-gui
 ```
 
 <p align="center">
-  <img src="assets/GUI.png" width="300" alt="CTFPacker">
+  <img src="assets/GUI.png" width="800" alt="CTFPacker">
 </p> 
 
 The GUI exposes all the same options as the CLI but with real-time build output, a log panel, and a profile system. You can save/load build configurations as named profiles, and export/import them as `.ctfp` files to share across machines.
