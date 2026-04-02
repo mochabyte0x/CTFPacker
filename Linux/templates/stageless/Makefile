@@ -1,5 +1,6 @@
 ###############################################################################
-# Makefile for Clang (MinGW) on Windows or cross-compiling from Linux
+# Makefile for Clang (MinGW) cross-compiling from Linux
+# Targets: Debian / Ubuntu / Kali Linux (mingw-w64 + clang + lld + nasm)
 # DO NOT MODIFY THIS FILE UNLESS YOU KNOW WHAT YOU ARE DOING
 ###############################################################################
 
@@ -9,23 +10,28 @@
 .SUFFIXES:
 
 TARGET_TRIPLE ?= x86_64-w64-mingw32
+CLANG         ?= clang --target=$(TARGET_TRIPLE) -fuse-ld=lld
 
-CLANG_BIN := $(shell which $(TARGET_TRIPLE)-clang 2>/dev/null)
+# Parallel jobs — use all available cores (override with: make JOBS=N)
+JOBS ?= $(shell nproc 2>/dev/null || echo 4)
+MAKEFLAGS += -j$(JOBS)
 
-ifeq ($(CLANG_BIN),)
-    CLANG_BIN := $(shell which clang 2>/dev/null)
+# ── Sysroot paths (standard Debian/Ubuntu/Kali layout) ───────────────────────
+MINGW_SYSROOT  := /usr/$(TARGET_TRIPLE)
+INCLUDE_DIR    := $(MINGW_SYSROOT)/include
+MINGW_LIB_DIR  := $(MINGW_SYSROOT)/lib
+INCLUDE        := -I$(INCLUDE_DIR)
+
+# GCC runtime libs (libgcc.a, libmingwex.a …).
+# Auto-detect the win32 subtree; fall back to MINGW_LIB_DIR if GCC is absent
+# (e.g. llvm-mingw-only setups).
+GCC_WIN32_PATH := $(shell find /usr/lib/gcc/$(TARGET_TRIPLE)/ -type d -name "*win32" 2>/dev/null | head -n1)
+ifeq ($(GCC_WIN32_PATH),)
+    GCC_WIN32_PATH := $(MINGW_LIB_DIR)
 endif
 
-TOOLCHAIN_ROOT := $(shell dirname $(shell dirname $(CLANG_BIN)))
-
-CLANG      := $(CLANG_BIN) --target=$(TARGET_TRIPLE) -fuse-ld=lld
-INCLUDE    := -I$(TOOLCHAIN_ROOT)/$(TARGET_TRIPLE)/include
-LIBPATH    := -L$(TOOLCHAIN_ROOT)/$(TARGET_TRIPLE)/lib
-
-GCC_WIN32_PATH := $(shell find $(TOOLCHAIN_ROOT) -type d -name "*win32" | head -n 1)
-ifneq ($(GCC_WIN32_PATH),)
-    LIBPATH += -L$(GCC_WIN32_PATH)
-endif
+# Both paths needed: GCC runtime + mingw-w64 import stubs (winhttp, ntdll …)
+LIBPATH := -L$(GCC_WIN32_PATH) -L$(MINGW_LIB_DIR)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 2. Build format selector (EXE is default)
@@ -36,10 +42,14 @@ FORMAT ?= EXE                  # { EXE | DLL }
 # 3. Source files
 # ───────────────────────────────────────────────────────────────────────────────
 COMMON_SRCS := \
-	api_hashing.c \
+	api_hashing.c  \
 	inject.c       \
 	unhook.c       \
-	whispers.c
+	hellhall.c     \
+	sandbox.c      \
+	trampoline.c   \
+	poolparty.c    \
+	timerqueue.c
 
 ifeq ($(FORMAT),DLL)
 	MAIN_SRC := main_dll.c
@@ -68,8 +78,12 @@ ASFLAGS := -f win64
 # Baseline flags from the original CTFPacker Makefile:
 #   -O0 -Wall -w -fms-extensions -fdeclspec -static
 # We keep them intact so behaviour matches the pre‑DLL build.
-CFLAGS_BASE  := -O0 -Wall -w -fms-extensions -fdeclspec -static
-LDFLAGS_BASE := -Wl,--disable-auto-import -s
+# Hardening flags for evasion and binary optimization
+HARDENING_FLAGS := -fno-stack-protector -fno-exceptions -fno-asynchronous-unwind-tables \
+                   -ffunction-sections -fdata-sections -Wl,--gc-sections
+
+CFLAGS_BASE  := -O0 -Wall -w -fms-extensions -fdeclspec -static -D_WIN32_WINNT=0x0602 $(HARDENING_FLAGS)
+LDFLAGS_BASE := -Wl,--disable-auto-import -s -Wl,--no-seh -mwindows
 LIBS         := -lwinhttp -lntdll
 
 ifeq ($(FORMAT),DLL)
@@ -84,15 +98,26 @@ endif
 # ───────────────────────────────────────────────────────────────────────────────
 # 6. Phony targets
 # ───────────────────────────────────────────────────────────────────────────────
-.PHONY: all exe dll clean
+.PHONY: all exe dll clean check
 
 all: $(TARGET)
 
 exe:
-	$(MAKE) FORMAT=EXE
+	$(MAKE) FORMAT=EXE JOBS=$(JOBS)
 
 dll:
-	$(MAKE) FORMAT=DLL
+	$(MAKE) FORMAT=DLL JOBS=$(JOBS)
+
+# ── Toolchain sanity check ────────────────────────────────────────────────────
+check:
+	@echo "[*] Checking required tools..."
+	@command -v clang   >/dev/null 2>&1 || { echo "[-] clang not found";   exit 1; }
+	@command -v lld     >/dev/null 2>&1 || { echo "[-] lld not found";     exit 1; }
+	@command -v nasm    >/dev/null 2>&1 || { echo "[-] nasm not found";    exit 1; }
+	@command -v make    >/dev/null 2>&1 || { echo "[-] make not found";    exit 1; }
+	@test -d "$(INCLUDE_DIR)"    || { echo "[-] MinGW includes missing: $(INCLUDE_DIR)";  exit 1; }
+	@test -d "$(MINGW_LIB_DIR)" || { echo "[-] MinGW libs missing: $(MINGW_LIB_DIR)";    exit 1; }
+	@echo "[+] All tools OK (jobs=$(JOBS))"
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 7. Linking & compilation rules
