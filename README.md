@@ -87,7 +87,24 @@ That's it ! This will install the python package via pipx, set up a `.desktop` l
 
 ## Usage
 
-General usage:
+### GUI
+
+If you installed via pipx or `install.sh`, you can launch the GUI directly or through your desktop app launcher (which is the preferred way using CTFPacker):
+
+```bash
+ctfpacker-gui
+# or
+ctfpg
+```
+
+<p align="center">
+  <img src="assets/GUI.png" width="800" alt="CTFPacker">
+</p> 
+
+The GUI exposes all the same options as the CLI but with real-time build output, a log panel, and a profile system. You can save/load build configurations as named profiles, and export/import them as `.ctfp` files to share across machines.
+
+### General usage
+
 ```
 usage: main.py [-h] {staged,stageless} ...
 
@@ -160,20 +177,6 @@ Stageless:
 
 Example usage: python main.py stageless -p shellcode.bin -e -s -pfx cert.pfx -pfx-pass 'password'
 ```
-
-### GUI
-
-If you installed via pipx or `install.sh`, you can launch the GUI directly or through your desktop app launcher:
-
-```bash
-ctfpacker-gui
-```
-
-<p align="center">
-  <img src="assets/GUI.png" width="800" alt="CTFPacker">
-</p> 
-
-The GUI exposes all the same options as the CLI but with real-time build output, a log panel, and a profile system. You can save/load build configurations as named profiles, and export/import them as `.ctfp` files to share across machines.
 
 ### Format option
 
