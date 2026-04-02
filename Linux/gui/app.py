@@ -201,8 +201,16 @@ class MainWindow(QMainWindow):
         self._log_panel.append_log("--- Build Configuration ---", "info")
         self._log_panel.append_log(f"  Mode:       {config.mode}", "info")
         self._log_panel.append_log(f"  Format:     {config.format}", "info")
-        self._log_panel.append_log(f"  Injection:  {config.inject_method}", "info")
-        if config.inject_method == "apc":
+        _INJECT_NAMES = {
+            "apc":          "apc (EarlyBird APC)",
+            "copyfile2":    "copyfile2 (CopyFile2 Callback)",
+            "tp_direct":    "tp_direct (PoolParty TP_DIRECT)",
+            "wf_overwrite": "wf_overwrite (PoolParty WF Overwrite)",
+            "timerqueue":   "timerqueue (Timer Queue Callback)",
+        }
+        inj_display = _INJECT_NAMES.get(config.inject_method, config.inject_method)
+        self._log_panel.append_log(f"  Injection:  {inj_display}", "info")
+        if config.inject_method in ("apc", "tp_direct", "wf_overwrite"):
             self._log_panel.append_log(f"  Target:     {config.target_process}", "info")
         self._log_panel.append_log(f"  Encrypt:    {'Yes' if config.encrypt else 'No'}", "info")
         self._log_panel.append_log(f"  Scramble:   {'Yes' if config.scramble else 'No'}", "info")
@@ -247,7 +255,7 @@ class MainWindow(QMainWindow):
             output_dir = os.path.dirname(out_file)
 
             self._log_panel.append_log("Build completed successfully!", "success")
-            self._log_panel.append_log(f"Output: {out_file}", "success")
+            self._log_panel.append_log_path("Output:", out_file, "success")
             self._dot_label.setStyleSheet(f"color: {GREEN}; font-size: 8px; padding: 0 4px 0 6px;")
             self._status_label.setText(f"\u2714  Build succeeded ({elapsed_str})")
             self._status_label.setStyleSheet(f"color: {GREEN};")

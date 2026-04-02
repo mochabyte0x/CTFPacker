@@ -4,11 +4,12 @@ import os
 from datetime import datetime
 
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QTextEdit, QPushButton, QHBoxLayout,
+    QWidget, QVBoxLayout, QTextEdit, QTextBrowser, QPushButton, QHBoxLayout,
     QProgressBar, QFileDialog, QLabel, QFrame
 )
 from PyQt6.QtGui import QTextCursor, QPixmap, QPainter
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QUrl
+from PyQt6.QtGui import QDesktopServices
 
 from gui.theme import GREEN, RED, YELLOW, BLUE, TEXT, CRUST, NORD3, FROST1, TEXT_MUTED, BORDER_SUB, ACCENT_DIM
 
@@ -22,8 +23,8 @@ _LOGO_CANDIDATES = [
 _LOGO_PATH = next((p for p in _LOGO_CANDIDATES if os.path.isfile(p)), _LOGO_CANDIDATES[0])
 
 
-class _WatermarkTextEdit(QTextEdit):
-    """QTextEdit that paints Logo.png as a centred, low-opacity watermark."""
+class _WatermarkTextEdit(QTextBrowser):
+    """QTextBrowser that paints Logo.png as a centred, low-opacity watermark."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -124,6 +125,8 @@ class LogPanel(QWidget):
         # Text area
         self._text = _WatermarkTextEdit()
         self._text.setReadOnly(True)
+        self._text.setOpenLinks(False)
+        self._text.anchorClicked.connect(self._on_link_clicked)
         self._text.setStyleSheet(f"""
             QTextEdit {{
                 background-color: {CRUST};
@@ -148,6 +151,19 @@ class LogPanel(QWidget):
         self._text.moveCursor(QTextCursor.MoveOperation.End)
         self._raw_lines.append(f"[{ts}] {message}")
 
+    def append_log_path(self, label: str, path: str, level: str = "success"):
+        """Append a log line where the path is a clickable hyperlink."""
+        color = LEVEL_COLORS.get(level, TEXT)
+        ts = datetime.now().strftime("%H:%M:%S")
+        ts_html = f'<span style="color:{NORD3};">[{ts}]</span>'
+        url = QUrl.fromLocalFile(path).toString()
+        link_html = (f'<span style="color:{color};">&nbsp;{self._escape(label)}</span>'
+                     f'<a href="{url}" style="color:#5e9bde; text-decoration:none;">'
+                     f'&nbsp;{self._escape(path)}</a>')
+        self._text.append(f'{ts_html}{link_html}')
+        self._text.moveCursor(QTextCursor.MoveOperation.End)
+        self._raw_lines.append(f"[{ts}] {label} {path}")
+
     def clear(self):
         self._text.clear()
         self._raw_lines.clear()
@@ -162,6 +178,10 @@ class LogPanel(QWidget):
         """Show the 'Open Output Folder' button after a successful build."""
         self._output_folder = folder
         self._open_folder_btn.show()
+
+    def _on_link_clicked(self, url: QUrl):
+        """Open a clicked path link with the system file manager."""
+        QDesktopServices.openUrl(url)
 
     def _on_open_folder(self):
         if self._output_folder and os.path.isdir(self._output_folder):

