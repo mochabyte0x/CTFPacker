@@ -369,19 +369,22 @@ class BuildEngine:
             data = f.read()
         data = data.replace("// #-INJECTION_METHOD_PLACEHOLDER-#", injection_code)
 
-        # CopyFile2 and PoolParty injections find an existing process — no suspended process needed
-        # comment out CreateSuspendedProcess and its surrounding sleeps/prints
+        # CopyFile2, PoolParty, and TimerQueue don't spawn a suspended process.
+        # Comment out the CreateSuspendedProcess block + the Sleep that follows it.
         if config.inject_method in ("copyfile2", "tp_direct", "wf_overwrite", "timerqueue"):
             lines = data.splitlines(keepends=True)
             in_csp_block = False
+            brace_depth = 0
             for i in range(len(lines)):
                 # Start of the CreateSuspendedProcess block
-                if "Creating suspended process" in lines[i] or "Creating a suspeneded process" in lines[i]:
+                if not in_csp_block and ("Creating suspended process" in lines[i] or "Creating a suspeneded process" in lines[i]):
                     in_csp_block = True
+                    brace_depth = 0
                 if in_csp_block:
+                    brace_depth += lines[i].count('{') - lines[i].count('}')
                     lines[i] = "//" + lines[i]
-                    # End after the closing brace of the if-block
-                    if "Process created with PID" in lines[i]:
+                    # End once all braces opened inside the block are closed
+                    if brace_depth <= 0 and '{' not in lines[i] and '}' in lines[i]:
                         in_csp_block = False
             data = ''.join(lines)
 
